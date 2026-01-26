@@ -1,0 +1,12 @@
+
+# Secrets et Logs
+config.py
+bourse_log.txt
+architect.log
+
+# Poubelle Python
+__pycache__/
+
+# Brouillons et Batch
+explo.ipynb
+run_bourse.bat
