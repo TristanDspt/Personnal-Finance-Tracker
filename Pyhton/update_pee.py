@@ -35,7 +35,7 @@ config_auto = {
     5: {"nom": "CiC Equilibre : FCPE 1630", "keyword": "FCPE 1630", "type": "excel", "params": params_cic},
     6: {"nom": "CiC Stratégie : FCPE 4604", "keyword": "FCPE 4604", "type": "excel", "params": params_cic}}
 
-dossier = r"E:\Data\Tristan\Téléchargements"
+dossier = config.dossier_dl
 tout_les_fichiers = os.listdir(dossier) # Crée une liste de textes avec les noms des fichiers
 
 # 3 LA BOUCLE

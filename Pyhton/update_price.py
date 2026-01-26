@@ -8,7 +8,7 @@ import sys
 
 # Configure le journal (va créer un fichier bourse_log.txt)
 logging.basicConfig(
-    filename=r'E:\OneDrive\Documents\Programmation\PFT\bourse_log.txt', 
+    filename=config.chemin_log, 
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     encoding='utf-8')
