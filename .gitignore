@@ -10,3 +10,4 @@ __pycache__/
 # Brouillons et Batch
 explo.ipynb
 run_bourse.bat
+.venv/
