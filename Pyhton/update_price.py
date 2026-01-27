@@ -43,15 +43,12 @@ if last_date_in_db is None:
 else:
     # On ajoute +1 jour pour ne pas re-télécharger le dernier jour déjà présent
     date_debut = last_date_in_db + pd.Timedelta(days=1)
-    if date_debut >= datetime.now().date():
-        logging.info(
-            f"Déjà à jour (Dernière date : {last_date_in_db})."
-        )  # si le script a déjà été lancé ce jour
+    if date_debut > datetime.now().date():
+        logging.info(f"Déjà à jour (Dernière date : {last_date_in_db}).")  # si le script a déjà été lancé ce jour
+        logging.info("-" * 50)  # pour améliorer la lisibilité des logs
         engine.dispose()
         sys.exit()
-    logging.info(
-        f"Dernière donnée en base : {last_date_in_db}. On repart du {date_debut}"
-    )  # info sur l'action du script
+    logging.info(f"Dernière donnée en base : {last_date_in_db}. On repart du {date_debut}")  # info sur l'action du script
 
 # 5. LA BOUCLE
 for index, row in df_liste_ticker.iterrows():
@@ -69,19 +66,11 @@ for index, row in df_liste_ticker.iterrows():
 
             # On injecte uniquement les nouvelles lignes
             df_temp.to_sql("cotation_cot", engine, if_exists="append", index=False)
-            logging.info(
-                f"Ajout de {len(df_temp)} nouvelles lignes pour {ticker}"
-            )  # info sur le bon déroulement de l'import
+            logging.info(f"Ajout de {len(df_temp)} nouvelles lignes pour {ticker}")  # info sur le bon déroulement de l'import
         else:
-            logging.info(
-                f"Déjà à jour pour {ticker}."
-            )  # info sur le bon déroulement de l'import
+            logging.info(f"Déjà à jour pour {ticker}.")  # info sur le bon déroulement de l'import
     except Exception as e:
-        logging.error(
-            f"Erreur sur {ticker} : {e}"
-        )  # info sur le type d'erreur rencontrée
+        logging.error(f"Erreur sur {ticker} : {e}")  # info sur le type d'erreur rencontrée
 engine.dispose()  # ferme la connection SQL pour liberer de la place en memoire
-logging.info(
-    "Connexion fermée. Traitement terminé !"
-)  # info sur la fermeture du script
+logging.info("Connexion fermée. Traitement terminé !")  # info sur la fermeture du script
 logging.info("-" * 50)  # pour améliorer la lisibilité des logs
