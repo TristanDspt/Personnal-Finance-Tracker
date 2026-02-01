@@ -80,9 +80,7 @@ for pdt_id, param in config_auto.items():
         else:
             df = pd.read_excel(chemin, **param["params"])
 
-        df["pdt_id"] = (
-            pdt_id  # On ajoute l'ID pour que la base sache de quel livret on parle
-        )
+        df["pdt_id"] = pdt_id  # On ajoute l'ID pour que la base sache de quel livret on parle
     else:
         print(f"⚠️ Fichier {param['nom']} non trouvé dans le dossier.")
         continue  # On passe au produit suivant si pas de fichier
@@ -92,7 +90,8 @@ for pdt_id, param in config_auto.items():
     date_fichier = df["cot_date_prix"].max()
     query = f"SELECT MAX(cot_date_prix) FROM cotation_cot WHERE pdt_id = {pdt_id}"
     with engine.connect() as conn:
-        date_db = pd.read_sql(query, conn).iloc[0, 0]
+        res = pd.read_sql(query, conn).iloc[0, 0] # On stocke le résultat brut (Pandas n'aime pas le type datetime de SQL)
+        date_db = pd.to_datetime(res) if res is not None else None # On convertit pour que Pandas soit content
 
         # 2. On traite le fichier uniquement si on trouve des dates plus récentes
         if date_db is None or date_fichier > date_db:
@@ -104,8 +103,6 @@ for pdt_id, param in config_auto.items():
             # On n'envoie que si le filtre n'est pas vide
             if not df_neuf.empty:
                 df_neuf.to_sql("cotation_cot", engine, if_exists="append", index=False)
-                print(
-                    f"✅ Mis à jour : {len(df_neuf)} lignes ajoutées pour {param['nom']}"
-                )
+                print(f"✅ Mis à jour : {len(df_neuf)} lignes ajoutées pour {param['nom']}")
         else:
             print(f"✅ {param['nom']} est déjà à jour.")
