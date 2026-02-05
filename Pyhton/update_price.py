@@ -14,15 +14,13 @@ logging.basicConfig(
     encoding="utf-8",
 )
 
-logging.info(
-    "Démarrage de la mise à jour automatique."
-)  # info sur le lancement du script
+logging.debug("Démarrage de la mise à jour automatique.")  # info sur le lancement du script
 
 # 1. Connection à la DB
 url = f"postgresql://{config.db_params['user']}:{config.db_params['password']}@{config.db_params['host']}:{config.db_params['port']}/{config.db_params['database']}"
 engine = create_engine(url)
 
-logging.info("Connexion établie !")  # pour savoir s'il se connecte bien à la base
+logging.debug("Connexion établie !")  # pour savoir s'il se connecte bien à la base
 
 # 2. Récupérer uniquement les produits "boursiers"
 query = """
@@ -72,5 +70,5 @@ for index, row in df_liste_ticker.iterrows():
     except Exception as e:
         logging.error(f"Erreur sur {ticker} : {e}")  # info sur le type d'erreur rencontrée
 engine.dispose()  # ferme la connection SQL pour liberer de la place en memoire
-logging.info("Connexion fermée. Traitement terminé !")  # info sur la fermeture du script
+logging.debug("Connexion fermée. Traitement terminé !")  # info sur la fermeture du script
 logging.info("-" * 50)  # pour améliorer la lisibilité des logs
