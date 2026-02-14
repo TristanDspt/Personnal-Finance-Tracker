@@ -5,4 +5,4 @@
 cd /d "%~dp0.."
 
 :: On lance avec ton Venv (Chemin absolu pour ton PC)
-"E:\Venvs\pft_env\Scripts\python.exe" "update_price.py"
+"E:\Venvs\pft_env\scripts\python.exe" "scripts\update_price.py"
