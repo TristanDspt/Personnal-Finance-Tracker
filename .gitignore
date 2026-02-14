@@ -1,13 +1,15 @@
 
 # Secrets et Logs
 config.py
-bourse_log.txt
 architect.log
+bourse_log.txt
 
 # Poubelle Python
-__pycache__/
+**/__pycache__/
+*.pyc
 
-# Brouillons et Batch
+# Brouillons et Explorations
+# On ignore le contenu du dossier imports mais on peut garder le dossier
+scripts/imports/
 explo.ipynb
-run_bourse.bat
 .vscode/
