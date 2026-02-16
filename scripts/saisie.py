@@ -35,12 +35,16 @@ df_liste_ptf, df_liste_pdt = load_data()
 
 # CREATION DES LISTE DEROULANTES
 # Création de df
-df_liste_ptf['affichage'] = df_liste_ptf['ptf_nom_banque'] + " - " + df_liste_ptf['ptf_type_enveloppe']
-df_titres = df_liste_ptf[df_liste_ptf['ptf_type_enveloppe'] != 'Livrets'].copy()
+df_pdt_cash = df_liste_pdt[df_liste_pdt['pdt_cash'] == True].copy()
+df_pdt_cash = df_pdt_cash.merge(df_liste_ptf[['ptf_id', 'ptf_nom_banque']], on='ptf_id')
+df_pdt_cash['affichage_cash'] = df_pdt_cash['ptf_nom_banque'] + " - " + df_pdt_cash['pdt_nom_produit']
+
+df_actions = df_liste_ptf[df_liste_ptf['ptf_type_enveloppe'] != 'Livrets'].copy()
+df_actions['affichage_actions'] = df_actions['ptf_nom_banque'] + " - " + df_actions['ptf_type_enveloppe']
 
 # Listes dynamiques
-liste_livrets_cash = df_liste_ptf['affichage'].tolist()
-liste_livrets_titres = df_titres['affichage'].tolist()
+liste_livrets_cash = df_pdt_cash['affichage_cash'].tolist()
+liste_livrets_titres = df_actions['affichage_actions'].tolist()
 
 # Listes fixes
 liste_types_cash = ["Dépôt", "Retrait", "Ajustement", "Intérêts"]
@@ -50,6 +54,9 @@ liste_types_titres = ["Achat", "Vente", "Ajustement", "Abondement", "Dividende"]
 
 # CONFIGURATION STREAMLIT
 st.set_page_config(layout="wide")
+if st.sidebar.button("🔄 Actualiser la BDD"):
+    st.cache_data.clear()
+    st.rerun()
 
 # BLOC TITRE
 st.markdown("<h1 style='text-align: center;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
@@ -67,58 +74,67 @@ if choix_global == "💸 Flux Cash":
     col1, col2, col3 = st.columns([0.5, 2, 0.5])
     with col2:
         choix_livret = st.selectbox("Livret", liste_livrets_cash)
-        # --- LOGIQUE BACKGROUND ---
-        # 1. On trouve l'ID du portefeuille
-        id_ptf_sel = df_liste_ptf[df_liste_ptf['affichage'] == choix_livret]['ptf_id'].values[0]
-        
-        # 2. On trouve le produit Cash associé
-        mask_cash = (df_liste_pdt['ptf_id'] == id_ptf_sel) & (df_liste_pdt['pdt_cash'] == True)
-        df_temp = df_liste_pdt[mask_cash]
-
-        if not df_temp.empty:
-            id_pdt_final = df_temp['pdt_id'].values[0]
-        else:
-            # SI PAS DE CASH (PEE, etc.), on prend le premier produit trouvé pour ce livret
-            # On s'en fiche, c'est juste pour stocker le montant de l'ajustement/frais
-            id_pdt_final = df_liste_pdt[df_liste_pdt['ptf_id'] == id_ptf_sel]['pdt_id'].values[0]
+        # On récupère tout d'un coup
+        selection = df_pdt_cash[df_pdt_cash['affichage_cash'] == choix_livret].iloc[0]
+        pdt_id = selection['pdt_id'] 
+        ptf_id = selection['ptf_id'] # Utile pour les frais/banque plus tard
+        pdt_nom_produit = selection['pdt_nom_produit'] # Pour l'affichage popup
 
     # Ligne 2
     col4, col5, col6 = st.columns(3)
     with col4:
-        date_cash = st.date_input("Date de l'opération")
+        mvt_date = st.date_input("Date de l'opération")
     with col5:
-        montant = st.number_input("Montant")
+        saisie_parts = st.text_input("Montant", value="0")
+        try:
+            mvt_nb_parts = float(saisie_parts.replace(',', '.'))
+        except ValueError:
+            st.error("⚠️ Montant invalide")
+            mvt_nb_parts = None
     with col6:
-        choix_cash = st.selectbox("Type", liste_types_cash)
+        mvt_type_mouvement = st.selectbox("Type", liste_types_cash)
+
+    # Valeurs fixes pour le cash
+    mvt_prix = 1
+    mvt_frais = 0
 
 # ACTIONS        
 elif choix_global == "📈 Titres":
 
     # Ligne 1
     col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        choix_placement = st.selectbox("Livret", liste_livrets_titres)
-        id_ptf_sel = df_titres[df_titres['affichage'] == choix_placement]['ptf_id'].values[0]
+        choix_enveloppe = st.selectbox("Livret", liste_livrets_titres)
+        ptf_id = df_actions[df_actions['affichage_actions'] == choix_enveloppe]['ptf_id'].values[0]
         
     with col2:
-        mask = (df_liste_pdt['ptf_id'] == id_ptf_sel) & (df_liste_pdt['pdt_cash'] == False)
-        titres_dispo = df_liste_pdt[mask]
-        choix_action = st.selectbox("Placement", titres_dispo['pdt_nom_produit'].tolist())
-        
+        df_pdt_du_ptf = df_liste_pdt[(df_liste_pdt['ptf_id'] == ptf_id) & (df_liste_pdt['pdt_cash'] == False)]
+        pdt_nom_produit = st.selectbox("Placement", df_pdt_du_ptf['pdt_nom_produit'].tolist())
         # On récupère l'id 
-        id_pdt_final = titres_dispo[titres_dispo['pdt_nom_produit'] == choix_action]['pdt_id'].values[0]
+        pdt_id = df_pdt_du_ptf[df_pdt_du_ptf['pdt_nom_produit'] == pdt_nom_produit]['pdt_id'].values[0]
         
     with col3:
-        choix_titre = st.selectbox("Type", liste_types_titres)
+        mvt_type_mouvement = st.selectbox("Type", liste_types_titres)
 
     # Ligne 2
     col4, col5, col6 = st.columns(3)
     with col4:
-        date_titre = st.date_input("Date de l'opération")
+        mvt_date = st.date_input("Date de l'opération")
     with col5:
-        quantite = st.number_input("Nombre de parts", step=0.000001, format="%.6f")
+        saisie_parts = st.text_input("Nombre de parts", value="0")
+        try:
+            mvt_nb_parts = float(saisie_parts.replace(',', '.'))
+        except ValueError:
+            st.error("⚠️ Nombre de parts invalide")
+            mvt_nb_parts = None
     with col6:
-        prix = st.number_input("Prix de la part", step=0.0001, format="%.4f")
+        saisie_prix = st.text_input("Prix de la part", value="0")
+        try:
+            mvt_prix = float(saisie_prix.replace(',', '.'))
+        except ValueError:
+            st.error("⚠️ Prix invalide")
+            mvt_prix = None
 
 # --------------------------------------------------------------------------------------------------------------
 
@@ -126,26 +142,26 @@ elif choix_global == "📈 Titres":
 
 # POP UP DE CONFIRMATION
 @st.dialog("Confirmer l'opération")
-def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_categorie):
+def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_nom_pdt, p_id_cash=None):
     # Gestion de la syntaxe "réelle vs DB"
     if p_type == "Dépôt":
-        type_propre = "APPORT"
+        type_txt = "APPORT"
     elif p_type == "Intérêts":
-        type_propre = "INTERET"
+        type_txt = "INTERET"
     else:
-        type_propre = str(p_type).upper()
+        type_txt = str(p_type).upper()
     # Gestion des ventes / retrait à passer en négatif
     if p_type in ["Vente", "Retrait"]:
-        p_qte = -abs(p_qte)
+        type_pos = -abs(p_qte)
     else:
-        p_qte = abs(p_qte)
+        type_pos = abs(p_qte)
 
     # On adapte l'affichage selon si c'est du Cash ou des Actions
-    if p_categorie == "💸 Flux Cash":
+    if p_cat == "💸 Flux Cash":
         # Affichage pour le CASH
         st.write(f"## 💸 Enregistrer un **{p_type}**")
         st.info(f"Montant : **{p_qte}€**")
-        st.write(f"### 🏛️ {choix_livret}")
+        st.write(f"### 🏛️ {p_nom_pdt}")
     else:
         # Affichage pour les ACTIONS
         st.write(f"## 📈 Enregistrer un **{p_type}**")
@@ -155,43 +171,86 @@ def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_categori
         col3, col4 = st.columns(2)
         col3.metric("Montant Total", f"{p_qte * p_prix:.2f}€")
         col4.metric("Frais de courtage", f"{p_frais:.2f}€")
-        st.write(f"### 🏛️ {choix_action}")
+        st.write(f"### 🏛️ {p_nom_pdt}")
 
     st.write(f"📅 *Date : {p_date}*")
     st.divider()
 
     if st.button("Valider ✅", use_container_width=True, type='primary'):
-        # On crée la requête SQL
-        requete = f"""
-            INSERT INTO public.mouvement_mvt 
-                (pdt_id, mvt_date, mvt_nb_parts, mvt_frais, mvt_type_mouvement, mvt_prix)
-            VALUES 
-                ({p_id}, '{p_date}', {p_qte}, {p_frais}, '{type_propre}', {p_prix})
-        """
-        # On l'exécute direct
+        # Connection à la DB
         with engine.begin() as conn:
-            conn.execute(text(requete))
+        
+            # On crée la requête SQL
+            requete_titre = f"""
+                INSERT INTO public.mouvement_mvt 
+                    (pdt_id, mvt_date, mvt_nb_parts, mvt_frais, mvt_type_mouvement, mvt_prix)
+                VALUES 
+                    ({p_id}, '{p_date}', {type_pos}, {p_frais}, '{type_txt}', {p_prix})
+            """
+            conn.execute(text(requete_titre))
 
-        st.cache_data.clear()  
+            # Cas spécifique pour les achat vente passage de l'argent de ou vers la poche cash
+            if p_id_cash:
+                # 1. Calcul du montant net (le cash qui bouge réellement)
+                montant_mouvement_titre = (p_qte * p_prix)
+                
+                if p_type == "Achat":
+                    montant_cash = -(montant_mouvement_titre + p_frais)
+                    type_cash = "RETRAIT"
+                elif p_type == "Vente":
+                    montant_cash = (montant_mouvement_titre - p_frais)
+                    type_cash = "APPORT"
+                else:
+                    # Pour Ajustement ou Dividende, à toi de voir la logique
+                    montant_cash = montant_mouvement_titre 
+                    type_cash = "AJUSTEMENT"
+
+                # 2. Requête miroir
+                requete_cash = f"""
+                    INSERT INTO public.mouvement_mvt 
+                        (pdt_id, mvt_date, mvt_nb_parts, mvt_frais, mvt_type_mouvement, mvt_prix)
+                    VALUES 
+                        ({p_id_cash}, '{p_date}', {montant_cash}, 0, '{type_cash}', 1)
+                """
+                conn.execute(text(requete_cash)) 
+
         st.success("🚀 Données envoyées !")
         time.sleep(1)
-        
         st.rerun()
 
 st.divider()
 
+# BOUTON ET ACTIVATION
+
 _, col_btn, _ = st.columns(3)
 with col_btn:
     if st.button("Enregistrer l'opération 💾", use_container_width=True):
-        # ETAPE A : On prépare les données à afficher dans le popup
-        if choix_global == "💸 Flux Cash":
-            # Rappel : Pour le cash, on dit que Prix = 1 et Parts = Montant
-            confirmer_operation(id_pdt_final, date_cash, montant, 0, choix_cash, 1, choix_global)
+        # 1. Initialisation par défaut (pour le Cash)
+        id_cash_miroir = None
         
-        elif choix_global == "📈 Titres":
-            # Calcul des frais rapide
-            banque = df_liste_ptf[df_liste_ptf['ptf_id'] == id_ptf_sel]['ptf_nom_banque'].values[0]
-            frais = min((prix * quantite) * 0.005, 1.99) if banque == 'BoursoBank' else 0
+        # 2. Logique spécifique aux Actions (Miroir + Frais)
+        if choix_global == "📈 Titres":
+            # On trouve l'ID de la poche cash
+            id_cash_miroir = df_liste_pdt[(df_liste_pdt['ptf_id'] == ptf_id) & (df_liste_pdt['pdt_cash'] == True)]['pdt_id'].values[0]
+            
+            # On récupère le nom de la banque pour calculer les frais
+            banque = df_liste_ptf[df_liste_ptf['ptf_id'] == ptf_id]['ptf_nom_banque'].values[0]
+            
+            # Calcul des frais Bourso (à adapter si tu as d'autres banques)
+            if banque == 'BoursoBank':
+                mvt_frais = min((mvt_prix * mvt_nb_parts) * 0.005, 1.99)
+            else:
+                mvt_frais = 0
 
-            # ETAPE B : On appelle la fonction
-            confirmer_operation(id_pdt_final, date_titre, quantite, frais, choix_titre, prix, choix_global)
+        # 3. Appel de la fonction (mvt_frais sera soit 0 (Cash), soit le calcul ci-dessus)
+        confirmer_operation(
+            pdt_id, 
+            mvt_date, 
+            mvt_nb_parts, 
+            mvt_frais, 
+            mvt_type_mouvement, 
+            mvt_prix, 
+            choix_global, 
+            pdt_nom_produit, 
+            id_cash_miroir
+        )
