@@ -1,15 +1,22 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
-import config
 import time
 
 # --------------------------------------------------------------------------------------------------------------
 
+# 0. CONFIGURATION PAGE (Doit être en premier)
+st.set_page_config(page_title="Saisie", page_icon="✍️", layout="wide")
+
 # SQL
 # 1 Connection à la DB
-url = f"postgresql://{config.db_params['user']}:{config.db_params['password']}@{config.db_params['host']}:{config.db_params['port']}/{config.db_params['database']}"
-engine = create_engine(url)
+@st.cache_resource
+def get_engine():
+    creds = st.secrets["postgres"]
+    url = f"postgresql://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
+    return create_engine(url)
+
+engine = get_engine()
 
 # 2. Fonction pour charger les données (mise en cache pour la rapidité)
 @st.cache_data
@@ -54,9 +61,6 @@ liste_types_titres = ["Achat", "Vente", "Ajustement", "Abondement", "Dividende"]
 
 # CONFIGURATION STREAMLIT
 st.set_page_config(layout="wide")
-if st.sidebar.button("🔄 Actualiser la BDD"):
-    st.cache_data.clear()
-    st.rerun()
 
 # BLOC TITRE
 st.markdown("<h1 style='text-align: center;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
@@ -141,7 +145,7 @@ elif choix_global == "📈 Titres":
 # AJOUT EN BASE
 
 # POP UP DE CONFIRMATION
-@st.dialog("Confirmer l'opération")
+@st.dialog("Confirmer l'opération") # crée la popup
 def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_nom_pdt, p_id_cash=None):
     # Gestion de la syntaxe "réelle vs DB"
     if p_type == "Dépôt":
@@ -214,6 +218,7 @@ def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_n
                 """
                 conn.execute(text(requete_cash)) 
 
+        st.cache_data.clear()
         st.success("🚀 Données envoyées !")
         time.sleep(1)
         st.rerun()

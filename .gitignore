@@ -1,15 +1,24 @@
-
-# Secrets et Logs
+# --- SÉCURITÉ & CONFIG ---
+# Identifiants et paramètres sensibles
 config.py
+scripts/config.py
+.streamlit/
 architect.log
 bourse_log.txt
 
-# Poubelle Python
+# --- PYTHON ---
+# Fichiers compilés et cache
 **/__pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Brouillons et Explorations
-# On ignore le contenu du dossier imports mais on peut garder le dossier
+# --- EXPLORATION & IDE ---
+# On ignore le contenu des imports et les notebooks de test
 scripts/imports/
 explo.ipynb
 .vscode/
+
+# --- RUN ---
+# On ignore les fichiers de lancement (optionnel, mais propre)
+run/
