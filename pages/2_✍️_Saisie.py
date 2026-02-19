@@ -59,13 +59,9 @@ liste_types_titres = ["Achat", "Vente", "Ajustement", "Abondement", "Dividende"]
 
 # --------------------------------------------------------------------------------------------------------------
 
-# CONFIGURATION STREAMLIT
-st.set_page_config(layout="wide")
-
 # BLOC TITRE
-st.markdown("<h1 style='text-align: center;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
-st.write("")
-st.write("#### ✍️ Saisie manuelle")
+#st.markdown("<h1 style='text-align: center; margin-bottom: 40px;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>✍️ Saisie</h2>", unsafe_allow_html=True)
 st.divider() # Un petit trait pour séparer proprement
 
 # CHOIX DU TYPE
