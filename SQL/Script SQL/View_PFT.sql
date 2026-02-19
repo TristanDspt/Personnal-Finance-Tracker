@@ -1,4 +1,4 @@
--- VUE PRINCIPALES
+-- VUE BRIQUE
 
 -- Vue instantannée
 CREATE OR REPLACE VIEW view_positions_actuelles as
@@ -8,107 +8,111 @@ SELECT
     -- La somme de toutes les parts (Achats + Ventes en négatif)
     SUM(mvt.mvt_nb_parts) as quantite_detenue,
     pdt.ptf_id,
-    pdt.pdt_cash
+    pdt.pdt_cash,
+    pdt.pdt_est_actif
 FROM public.mouvement_mvt mvt
 INNER JOIN public.produit_financier_pdt pdt ON pdt.pdt_id = mvt.pdt_id
-WHERE pdt.pdt_est_actif = true
-GROUP BY mvt.pdt_id, pdt.pdt_nom_produit, pdt.pdt_cash,pdt.ptf_id
-HAVING SUM(mvt.mvt_nb_parts) > 0; -- Pour ne pas afficher les lignes soldées à zéro
-
--- Vue Historique
-CREATE OR REPLACE VIEW view_performance_historique as
-WITH flux AS (
-    SELECT pdt_id, SUM(mvt_nb_parts * mvt_prix) as total_investi
-    FROM public.mouvement_mvt
-    GROUP BY pdt_id
-),
-valeur AS (
-    -- On prend la dernière cotation multipliée par le nombre de parts actuel
-    SELECT 
-        vpa.pdt_id, 
-        vpa.quantite_detenue * COALESCE(
-            (SELECT cot_prix_unitaire FROM public.cotation_cot c 
-             WHERE c.pdt_id = vpa.pdt_id ORDER BY cot_date_prix DESC LIMIT 1), 
-            1
-        ) as valeur_marche
-    FROM view_positions_actuelles vpa
-)
-SELECT 
-    pdt.pdt_id,
-    pdt.ptf_id,
-    pdt.pdt_nom_produit,
-    pdt.pdt_cash,
-    COALESCE(v.valeur_marche, 0) as valeur_actuelle,
-    COALESCE(v.valeur_marche, 0) - COALESCE(f.total_investi, 0) as profit_euro
-FROM public.produit_financier_pdt pdt
-LEFT JOIN flux f ON pdt.pdt_id = f.pdt_id
-LEFT JOIN valeur v ON pdt.pdt_id = v.pdt_id;
+GROUP BY mvt.pdt_id, pdt.pdt_nom_produit, pdt.pdt_cash, pdt.ptf_id, pdt.pdt_est_actif;
 
 -- Vue PRU
-CREATE OR REPLACE VIEW view_pru as
+CREATE OR REPLACE VIEW view_pru AS
 SELECT 
-    mvt.pdt_id, 
-    pdt.pdt_nom_produit,
-    -- 1. Coût total d'achat (Parts * Prix + Frais) pour les flux positifs
-    SUM(
-        CASE WHEN mvt_nb_parts > 0 
-        THEN (mvt_nb_parts * mvt_prix) + mvt_frais 
-        ELSE 0
-    END) as cout_total_achat,
-    -- 2. Total des parts achetées historiquement
-    SUM(
-        CASE WHEN mvt_nb_parts > 0 
-        THEN mvt_nb_parts 
-        ELSE 0
-    END) as total_parts_achetees,
-    -- 3. Calcul du PRU avec sécurité division par zéro
+    pdt_id,
+    -- On garde ta logique de calcul avec les frais (c'est très bien !)
     CASE 
         WHEN SUM(CASE WHEN mvt_nb_parts > 0 THEN mvt_nb_parts ELSE 0 END) > 0 
         THEN SUM(CASE WHEN mvt_nb_parts > 0 THEN (mvt_nb_parts * mvt_prix) + mvt_frais ELSE 0 END) 
              / SUM(CASE WHEN mvt_nb_parts > 0 THEN mvt_nb_parts ELSE 0 END)
         ELSE 0 
     END as pru
-FROM public.mouvement_mvt mvt
-INNER JOIN public.produit_financier_pdt pdt ON pdt.pdt_id = mvt.pdt_id
-WHERE 
-    pdt.pdt_cash != true
-    AND pdt.pdt_est_actif = true
-GROUP BY mvt.pdt_id, pdt.pdt_nom_produit;
+FROM public.mouvement_mvt
+GROUP BY pdt_id;
 
--- VUE SECONDAIRES
 
--- Vue Valeur PFT
-CREATE OR REPLACE VIEW view_valeur_portefeuille as
-with derniere_date as (
-	select
-		pdt_id,
-		max(cot_date_prix) as max_date
-	from public.cotation_cot
-	group by pdt_id
+
+-- SUPER VUE
+
+CREATE OR REPLACE VIEW view_global_portefeuille AS
+WITH flux_net AS (
+    SELECT 
+        pdt_id, 
+        -- 1. TON ARGENT : Somme des achats réels (on exclut l'abondement pour ton effort perso)
+        SUM(CASE WHEN mvt_nb_parts > 0 AND (mvt_type_mouvement != 'ABONDEMENT' OR mvt_type_mouvement IS NULL) 
+                 THEN (mvt_nb_parts * mvt_prix) + mvt_frais ELSE 0 END) AS effort_epargne_perso,
+        
+        -- 2. L'ABONDEMENT : L'argent gratuit identifié par le type de mouvement
+        SUM(CASE WHEN mvt_type_mouvement = 'ABONDEMENT' 
+                 THEN (mvt_nb_parts * mvt_prix) ELSE 0 END) AS total_abondement,
+
+        -- 3. FLUX NET : Pour gérer les livrets (Dépôts - Retraits)
+        SUM(mvt_nb_parts * mvt_prix + mvt_frais) AS cash_net_dans_le_produit,
+        
+        -- 4. HISTO COMPLET : Utile pour le calcul du profit total (valeur + ce qui est déjà sorti)
+        SUM(CASE WHEN mvt_nb_parts > 0 THEN (mvt_nb_parts * mvt_prix) + mvt_frais ELSE 0 END) AS total_investi_historique,
+        SUM(CASE WHEN mvt_nb_parts < 0 THEN ABS(mvt_nb_parts * mvt_prix) ELSE 0 END) AS total_encaisse_historique
+    FROM public.mouvement_mvt
+    GROUP BY pdt_id
 ),
-	dernier_prix as (
-	select 
-		cot.pdt_id,
-		cot.cot_prix_unitaire
-	from public.cotation_cot cot
-	inner join derniere_date dd
-		on cot.pdt_id = dd.pdt_id
-		and cot.cot_date_prix = dd.max_date
+derniere_cotation AS (
+    SELECT pdt_id, cot_prix_unitaire, cot_date_prix
+    FROM (
+        SELECT pdt_id, cot_prix_unitaire, cot_date_prix,
+               ROW_NUMBER() OVER (PARTITION BY pdt_id ORDER BY cot_date_prix DESC) as rn
+        FROM public.cotation_cot
+    ) t WHERE t.rn = 1
 )
-select
-	vpa.pdt_id,
-	vpa.ptf_id,
-	vpa.pdt_nom_produit,
-	vpa.quantite_detenue,
-	vpa.quantite_detenue * COALESCE(dp.cot_prix_unitaire, 1) AS valeur_actuelle,
-	pru.pru,
-	vpa.quantite_detenue * COALESCE(pru.pru, 1) as valeur_pru_totale,
-	vpa.pdt_cash
-from view_positions_actuelles vpa
-left join dernier_prix dp
-	on dp.pdt_id = vpa.pdt_id
-left join view_pru pru 
-	on vpa.pdt_id = pru.pdt_id
+SELECT 
+    vpa.pdt_id,
+    vpa.ptf_id,
+    vpa.pdt_nom_produit,
+    vpa.quantite_detenue,
+    vpa.pdt_cash,
+    vpa.pdt_est_actif,
+    
+    -- CAPITAL INVESTI :
+    CASE 
+        WHEN vpa.pdt_cash = True THEN ROUND(vpa.quantite_detenue::numeric, 2)
+        ELSE ROUND(COALESCE(fn.effort_epargne_perso, 0)::numeric, 2) 
+    END AS capital_investi,
+    
+    -- CAPITAL ACTUEL : Valeur marché aujourd'hui (Quantité * Dernier cours)
+    ROUND((vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1))::numeric, 2) AS capital_actuel,
+
+    -- ABONDEMENT : Argent gratuit cumulé sur ce produit
+    ROUND(COALESCE(fn.total_abondement, 0)::numeric, 2) AS abondement_recu,
+
+    -- PRU (Prix de Revient Unitaire) : Ton prix moyen d'achat
+    ROUND(CAST(COALESCE(pru.pru, 0) AS NUMERIC), 4) AS prix_achat_moyen,
+    
+    -- PROFIT EURO : Argent gagné (Valeur + Ventes - Achats totaux). 0 pour le cash.
+    CASE 
+        WHEN vpa.pdt_cash = True THEN 0
+        ELSE ROUND((
+            (vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1)) 
+            + COALESCE(fn.total_encaisse_historique, 0) 
+            - COALESCE(fn.total_investi_historique, 0)
+        )::numeric, 2)
+    END AS profit_euro,
+
+    -- PROFIT % : Performance basée sur la réalité de l'actif (abondement + capital investi)
+    CASE 
+        WHEN vpa.pdt_cash = True THEN 0
+        -- On divise par (Ton Argent + Abondement) pour avoir la base réelle du placement
+        WHEN (COALESCE(fn.effort_epargne_perso, 0) + COALESCE(fn.total_abondement, 0)) > 0 
+        THEN ROUND(
+            ((
+                (vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1) + COALESCE(fn.total_encaisse_historique, 0)) 
+                / (fn.effort_epargne_perso + fn.total_abondement)
+            ) - 1)::numeric * 100, 2)
+        ELSE 0 
+    END AS profit_pourcent,
+    
+    dc.cot_date_prix AS derniere_maj_cours
+
+FROM view_positions_actuelles vpa
+LEFT JOIN flux_net fn ON vpa.pdt_id = fn.pdt_id
+LEFT JOIN derniere_cotation dc ON vpa.pdt_id = dc.pdt_id
+LEFT JOIN view_pru pru ON vpa.pdt_id = pru.pdt_id;
 
 
 				
