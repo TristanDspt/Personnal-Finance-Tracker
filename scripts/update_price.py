@@ -46,7 +46,7 @@ else:
         logging.info("-" * 50)  # pour améliorer la lisibilité des logs
         engine.dispose()
         sys.exit()
-    logging.info(f"Dernière donnée en base : {last_date_in_db}. On repart du {date_debut}")  # info sur l'action du script
+    logging.info(f"Dernière donnée en base : {last_date_in_db}. Ajout à partir du {date_debut}")  # info sur l'action du script
 
 # 5. LA BOUCLE
 for index, row in df_liste_ticker.iterrows():
