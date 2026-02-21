@@ -1,0 +1,20 @@
+ROADMAP PFT :
+
+1. Homepage :
+    -> integration du tableau
+    -> graphiques : progression globale (comparé à l'attendu : similiraire a celui d'excel) + idée à trouver ou non ?
+    -> rendre le slider de selection de période actif (peut être le prio n°1)
+
+2. Page saisie : optionnel
+    -> refacto complète pour integer la "super vue"
+
+3. Scipt update_price : optionnel
+    -> refacto complète pour integer la "super vue" ?
+
+4. Page Dashbords
+    -> st.radio pour selectionner les differents dashboards
+        - dash ETF (qui regroupe les deux ETF) ??
+        - dash PEA
+        - dash CTO
+        - dash Stef
+        - dash CiC (quid du détails des 3 enveloppes ?)
