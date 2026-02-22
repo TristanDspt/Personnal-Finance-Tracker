@@ -26,8 +26,9 @@ engine = get_engine()
 
 # -----------------------------------------------------------------------------------------------------------------
 
-#IMPORT DE LA SUPER VUE SQL
+#IMPORT DES VUE SQL
 df = pd.read_sql("SELECT * FROM view_global_portefeuille", engine)
+df_histo = pd.read_sql("SELECT * FROM view_historique_portefeuille", engine)
 
 # INTERFACE GRAPHIQUE
 
@@ -35,19 +36,36 @@ df = pd.read_sql("SELECT * FROM view_global_portefeuille", engine)
 st.markdown("<h1 style='text-align: center; margin-bottom: 0px;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
 st.divider() # Un petit trait pour séparer proprement
 
-# --- 2. FILTRES ---
-# Ton slider de durée ici pour qu'il pilote tout le reste
-duree = st.sidebar.select_slider("Période d'analyse", options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"])
+# --- 2. FILTRES & LOGIQUE TEMPORELLE ---
 
-# On traduit le texte en jours
+duree = st.sidebar.select_slider(
+    "Période d'analyse", 
+    options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"], 
+)
+
+# 1. Traduction en jours
 mapping_duree = {
-    "1 Mois": 30,
-    "3 Mois": 90,
-    "6 Mois": 180,
-    "1 An": 365,
-    "Max": 12000
-}
+    "1 Mois": 30, 
+    "3 Mois": 90, 
+    "6 Mois": 180, 
+    "1 An": 365, 
+    "3 Ans": 1095, 
+    "5 Ans": 1825, 
+    "Max": 18250}
 jours = mapping_duree[duree]
+
+# 2. Définition de la date pivot
+date_debut = pd.Timestamp.now() - pd.Timedelta(days=jours)
+
+# 3. Création des DataFrames filtrés
+# On convertit en datetime si ce n'est pas fait à l'import
+df_histo['jour'] = pd.to_datetime(df_histo['jour'])
+
+# DataFrame filtré sur la période
+df_periode = df_histo[df_histo['jour'] >= date_debut]
+
+# Somme totale par jour pour le graphique global
+df_total_quotidien = df_periode.groupby('jour')['capital_actuel'].sum().reset_index()
 
 # --- 3. INSIGHTS ---
 
@@ -71,22 +89,6 @@ perf_etf_euro = df_etf['profit_euro'].sum()
 investi_etf = df_etf['capital_investi'].sum()
 perf_etf_pcent = (perf_etf_euro / investi_etf * 100) if investi_etf > 0 else 0
 
-# Calcul par enveloppe
-portefeuilles = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
-perf = {}
-
-for ptf_id, ptf_nom in portefeuilles.items():
-    df_temp = df.query("ptf_id == @ptf_id")
-
-    profit_local = df_temp['profit_euro'].sum()
-    investi_local = df_temp['capital_investi'].sum()
-    abondement_local = df_temp['abondement_recu'].sum()
-
-    total_local = investi_local + abondement_local
-    local_pcent = profit_local / total_local * 100 if total_local > 0 else 0
-
-    perf[ptf_nom] = {"prof": profit_local, "pct": local_pcent}
-
 # Calcul des poids
 etf_ids = [1, 2]
 pee_ids = [3, 4]
@@ -98,6 +100,53 @@ if capital > 0:
     poids_livret = df.query("ptf_id in @livret_ids")['capital_actuel'].sum() / capital * 100
 else:
     poids_etf = poids_pee = poids_livret = 0
+
+# Performance combinée (PEA + CTO)
+df_retraite = (df_periode.query("ptf_id in [1, 2]")
+               .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+               .sum()
+               .reset_index()
+               .query("capital_investi > 1")
+               .sort_values('jour'))
+
+if not df_retraite.empty:
+    snap_debut, snap_fin = df_retraite.iloc[0], df_retraite.iloc[-1]
+
+    if duree == "Max":
+        perf_retraite_euro = snap_fin['profit_euro']
+    else:
+        perf_retraite_euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
+
+    perf_retraite_pct = (perf_retraite_euro / snap_fin['capital_investi'] * 100) if snap_fin['capital_investi'] > 0 else 0
+else:
+    perf_retraite_euro, perf_retraite_pct = 0, 0
+
+# Calcul par enveloppe
+portefeuilles = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
+perf = {}
+
+for ptf_id, ptf_nom in portefeuilles.items():
+    df_temp = (df_periode.query("ptf_id == @ptf_id")
+               .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+               .sum()
+               .reset_index()
+               .query("capital_investi + abondement_recu > 1")
+               .sort_values('jour'))
+
+    if not df_temp.empty:
+        snap_debut, snap_fin = df_temp.iloc[0], df_temp.iloc[-1]
+
+        if duree == "Max":
+            profit_local = snap_fin['profit_euro']
+        else:
+            profit_local = snap_fin['profit_euro'] - snap_debut['profit_euro']
+
+        base_locale = snap_fin['capital_investi'] + snap_fin['abondement_recu']
+        local_pcent = (profit_local / base_locale * 100) if base_locale > 0 else 0
+    else:
+        profit_local, local_pcent = 0, 0
+
+    perf[ptf_nom] = {"prof": profit_local, "pct": local_pcent}
 
 # --- 4. INTERFACE GRAPHIQUE ---
 
@@ -124,7 +173,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-_, col1, col2, col3, _ = st.columns([0.5, 1, 1, 1, 0.5])
+st.markdown("<h3 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>🕰️ Historique</h3>", unsafe_allow_html=True)
+
+_, col1, col2, col3, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
 with col1:
     st.metric(
@@ -144,46 +195,12 @@ with col2:
 with col3:
     st.metric(
         label="Performance ETF", 
-        value=f"{perf_etf_pcent:.0f} %",
+        value=f"{perf_etf_pcent:.2f} %",
         delta=f"{perf_etf_euro:,.0f} €".replace(",", " "),
         help="Rendement des enveloppes ETF"
     )
 
-col4, col5, col6, col7 = st.columns(4)
-
-with col4:
-    st.metric(
-        label="Performance PEA", 
-        value=f"{perf['PEA']['prof']:.0f} €",
-        delta=f"{perf['PEA']['pct']:.0f} %",
-        help="Rendement total par rapport au capital investi"
-    )
-
-with col5:
-    st.metric(
-        label="Performance CTO", 
-        value=f"{perf['CTO']['prof']:.0f} €",
-        delta=f"{perf['CTO']['pct']:.0f} %",
-        help="Rendement total par rapport au capital investi"
-    )
-
-with col6:
-    st.metric(
-        label="Performance STEF", 
-        value=f"{perf['STEF']['prof']:.0f} €",
-        delta=f"{perf['STEF']['pct']:.0f} %",
-        help="Rendement total par rapport au capital investi"
-    )
-
-with col7:
-    st.metric(
-        label="Performance CiC", 
-        value=f"{perf['CiC']['prof']:.0f} €",
-        delta=f"{perf['CiC']['pct']:.0f} %",
-        help="Rendement total par rapport au capital investi"
-    )
-
-# --- 5. GRAPHIQUES ---
+# GRAPHIQUES
 
 # Design Commun
 def apply_style(fig):
@@ -201,7 +218,7 @@ common_layout = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     separators=", "
-)
+    )
 
 # ETF (ID 1 & 2)
 df_etf = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
@@ -252,27 +269,71 @@ fig_liv.update_layout(common_layout, annotations=[
 ])
 
 # Affichage
-_, col8, col9, col10, _ = st.columns([0.5, 1, 1, 1, 0.5])
-with col8: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
-with col9: st.plotly_chart(fig_pee, use_container_width=True, config={'displayModeBar': False})
-with col10: st.plotly_chart(fig_liv, use_container_width=True, config={'displayModeBar': False})
+col4, col5, col6 = st.columns(3)
+with col4: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
+with col5: st.plotly_chart(fig_pee, use_container_width=True, config={'displayModeBar': False})
+with col6: st.plotly_chart(fig_liv, use_container_width=True, config={'displayModeBar': False})
 
 st.divider()
 
-# --- 4. TABLEAU GLOBAL ---
-st.write("### 📊 État des Lieux Global")
+# --- 4. TABLEAU GLOBAL --- (réactif au slider)
+
+st.markdown(f"<h3 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📊 Performance : {duree}</h3>", unsafe_allow_html=True)
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    st.metric(
+        label="Performance ETF", 
+        value=f"{perf_retraite_euro:,.0f} €".replace(",", " "),
+        delta=f"{perf_retraite_pct:.2f} %",
+        help="Rendement des enveloppes ETF"
+    )
+
+with col2:
+    st.metric(
+        label="Performance PEA", 
+        value=f"{perf['PEA']['prof']:,.0f} €".replace(",", " "),
+        delta=f"{perf['PEA']['pct']:.0f} %",
+        help="Rendement total par rapport au capital investi"
+    )
+
+with col3:
+    st.metric(
+        label="Performance CTO", 
+        value=f"{perf['CTO']['prof']:,.0f} €".replace(",", " "),
+        delta=f"{perf['CTO']['pct']:.0f} %",
+        help="Rendement total par rapport au capital investi"
+    )
+
+with col4:
+    st.metric(
+        label="Performance STEF", 
+        value=f"{perf['STEF']['prof']:,.0f} €".replace(",", " "),
+        delta=f"{perf['STEF']['pct']:.0f} %",
+        help="Rendement total par rapport au capital investi"
+    )
+
+with col5:
+    st.metric(
+        label="Performance CiC", 
+        value=f"{perf['CiC']['prof']:,.0f} €".replace(",", " "),
+        delta=f"{perf['CiC']['pct']:.0f} %",
+        help="Rendement total par rapport au capital investi"
+    )
+
 # Ton st.dataframe(df_filtre) ici
 
 st.divider()
 
 # --- 5. GRAPHIQUES ---
-st.write("### 📈 Analyses Graphiques")
 row1_col1, row1_col2 = st.columns(2)
 with row1_col1:
-    st.write("Graph 1") # Ex: Évolution Capital
+    st.write("Graph 1 ?") # Ex: Évolution Capital
 
 with row1_col2:
-    st.write("Graph 2") # Ex: Allocation
+    st.write("Graph 2 ?") # Ex: Allocation
 
 row2_col1, row2_col2 = st.columns(2)
 # etc...
+
