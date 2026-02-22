@@ -195,7 +195,7 @@ with col2:
 with col3:
     st.metric(
         label="Performance ETF", 
-        value=f"{perf_etf_pcent:.2f} %",
+        value=f"{perf_etf_pcent:.0f} %",
         delta=f"{perf_etf_euro:,.0f} €".replace(",", " "),
         help="Rendement des enveloppes ETF"
     )
@@ -286,7 +286,7 @@ with col1:
     st.metric(
         label="Performance ETF", 
         value=f"{perf_retraite_euro:,.0f} €".replace(",", " "),
-        delta=f"{perf_retraite_pct:.2f} %",
+        delta=f"{perf_retraite_pct:.0f} %",
         help="Rendement des enveloppes ETF"
     )
 
