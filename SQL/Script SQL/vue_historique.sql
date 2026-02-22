@@ -102,19 +102,7 @@ SELECT
             + total_encaisse_histo 
             - total_investi_histo
         )
-    END as profit_euro,
-
-    -- 5. Pourcentage de performance (Aligné sur la Super Vue Globale)
-    -- Formule : Profit / (Effort Perso + Abondement)
-    CASE 
-        WHEN pdt_cash = True THEN 0
-        WHEN (capital_investi + abondement_recu) > 0 
-        THEN (
-            (( (solde_parts * COALESCE(prix_a_jour, 0)) + total_encaisse_histo ) 
-            / (capital_investi + abondement_recu)) - 1
-        ) * 100
-        ELSE 0 
-    END as profit_pourcent
+    END as profit_euro
 
 FROM historique_final
 -- On filtre pour ne pas afficher les produits avant leur achat ou après leur clôture totale
