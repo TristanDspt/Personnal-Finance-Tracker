@@ -54,10 +54,10 @@ WITH flux_net AS (
     GROUP BY pdt_id
 ),
 derniere_cotation AS (
-    SELECT pdt_id, cot_prix_unitaire, cot_date_prix
+    SELECT pdt_id, cot_prix, cot_date
     FROM (
-        SELECT pdt_id, cot_prix_unitaire, cot_date_prix,
-               ROW_NUMBER() OVER (PARTITION BY pdt_id ORDER BY cot_date_prix DESC) as rn
+        SELECT pdt_id, cot_prix, cot_date,
+               ROW_NUMBER() OVER (PARTITION BY pdt_id ORDER BY cot_date DESC) as rn
         FROM public.cotation_cot
     ) t WHERE t.rn = 1
 )
@@ -76,7 +76,7 @@ SELECT
     END AS capital_investi,
     
     -- CAPITAL ACTUEL : Valeur marché aujourd'hui (Quantité * Dernier cours)
-    ROUND((vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1))::numeric, 2) AS capital_actuel,
+    ROUND((vpa.quantite_detenue * COALESCE(dc.cot_prix, 1))::numeric, 2) AS capital_actuel,
 
     -- ABONDEMENT : Argent gratuit cumulé sur ce produit
     ROUND(COALESCE(fn.total_abondement, 0)::numeric, 2) AS abondement_recu,
@@ -88,7 +88,7 @@ SELECT
     CASE 
         WHEN vpa.pdt_cash = True THEN 0
         ELSE ROUND((
-            (vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1)) 
+            (vpa.quantite_detenue * COALESCE(dc.cot_prix, 1)) 
             + COALESCE(fn.total_encaisse_historique, 0) 
             - COALESCE(fn.total_investi_historique, 0)
         )::numeric, 2)
@@ -101,18 +101,68 @@ SELECT
         WHEN (COALESCE(fn.effort_epargne_perso, 0) + COALESCE(fn.total_abondement, 0)) > 0 
         THEN ROUND(
             ((
-                (vpa.quantite_detenue * COALESCE(dc.cot_prix_unitaire, 1) + COALESCE(fn.total_encaisse_historique, 0)) 
+                (vpa.quantite_detenue * COALESCE(dc.cot_prix, 1) + COALESCE(fn.total_encaisse_historique, 0)) 
                 / (fn.effort_epargne_perso + fn.total_abondement)
             ) - 1)::numeric * 100, 2)
         ELSE 0 
     END AS profit_pourcent,
     
-    dc.cot_date_prix AS derniere_maj_cours
+    dc.cot_date AS derniere_maj_cours
 
 FROM view_positions_actuelles vpa
 LEFT JOIN flux_net fn ON vpa.pdt_id = fn.pdt_id
 LEFT JOIN derniere_cotation dc ON vpa.pdt_id = dc.pdt_id
 LEFT JOIN view_pru pru ON vpa.pdt_id = pru.pdt_id;
+
+-- VUE HISTORIQUE PATRIMOINE
+
+CREATE OR REPLACE VIEW view_historique_patrimoine AS
+WITH date_range AS (
+    SELECT generate_series(MIN(mvt_date), CURRENT_DATE, '1 day')::date AS jour FROM mouvement_mvt
+),
+produits AS (
+    SELECT DISTINCT pdt_id FROM mouvement_mvt
+),
+grille_vide AS (
+    SELECT d.jour, p.pdt_id FROM date_range d CROSS JOIN produits p
+),
+mouvements_cumules AS (
+    SELECT 
+        gv.jour, gv.pdt_id,
+        COALESCE(SUM(m.mvt_nb_parts), 0) as mvt_du_jour
+    FROM grille_vide gv
+    LEFT JOIN mouvement_mvt m ON gv.jour = m.mvt_date AND gv.pdt_id = m.pdt_id
+    GROUP BY gv.jour, gv.pdt_id
+),
+historique_parts AS (
+    SELECT 
+        jour, pdt_id,
+        SUM(mvt_du_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as solde_parts
+    FROM mouvements_cumules
+),
+historique_complet AS (
+    SELECT 
+        hp.jour,
+        hp.pdt_id,
+        hp.solde_parts,
+        -- On va chercher le prix et on "bouche les trous" (Week-ends)
+        LAST_VALUE(c.cot_prix) OVER (
+            PARTITION BY hp.pdt_id 
+            ORDER BY hp.jour 
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) as prix_a_jour
+    FROM historique_parts hp
+    LEFT JOIN public.cotation_cot c ON hp.jour = c.cot_date AND hp.pdt_id = c.pdt_id
+)
+SELECT 
+    jour,
+    pdt_id,
+    solde_parts,
+    prix_a_jour,
+    (solde_parts * prix_a_jour) as valeur_euro -- LE GRAAL !
+FROM historique_complet
+WHERE solde_parts > 0 AND prix_a_jour IS NOT NULL
+ORDER BY jour DESC, pdt_id;
 
 
 				

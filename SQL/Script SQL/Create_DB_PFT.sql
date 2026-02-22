@@ -42,8 +42,8 @@ CREATE SEQUENCE public.cotation_cot_cot_id_seq;
 
 CREATE TABLE public.cotation_COT (
     COT_id INTEGER NOT NULL DEFAULT nextval('public.cotation_cot_cot_id_seq'),
-    COT_date_prix DATE NOT NULL,
-    COT_prix_unitaire NUMERIC(10,6) NOT NULL,
+    COT_date DATE NOT NULL,
+    COT_prix NUMERIC(10,6) NOT NULL,
     PDT_id INTEGER NOT NULL,
     CONSTRAINT cot_id PRIMARY KEY (COT_id)
 );
