@@ -41,9 +41,9 @@ SELECT
     vpa.pdt_id,
     vpa.ptf_id,
     vpa.pdt_nom_produit,
-    vpa.quantite_detenue,
     vpa.pdt_cash,
     vpa.pdt_est_actif,
+    vpa.quantite_detenue,
     
     -- CAPITAL INVESTI : 
     -- Si c'est du cash, l'investi c'est ce qu'il reste (solde). 
