@@ -98,7 +98,7 @@ CREATE INDEX idx_cot_pdt_id ON public.cotation_COT(PDT_id);
 
 -- Index sur les Dates (Accélère les filtres temporels et graphiques)
 CREATE INDEX idx_mvt_date ON public.mouvement_MVT(MVT_date);
-CREATE INDEX idx_cot_date ON public.cotation_COT(COT_date_prix);
+CREATE INDEX idx_cot_date ON public.cotation_COT(COT_date);
 
 ------------------------------------------------------------
 -- 7. CONTRAINTES D'UNICITE SPECIFIQUES
@@ -114,7 +114,7 @@ ADD CONSTRAINT unique_ticker_par_ptf UNIQUE (PTF_id, PDT_ticker);
 
 -- Une seule ligne de prix par produit pour une date donnée
 ALTER TABLE public.cotation_COT 
-ADD CONSTRAINT unique_cotation_par_jour UNIQUE (PDT_id, COT_date_prix);
+ADD CONSTRAINT unique_cotation_par_jour UNIQUE (PDT_id, COT_date);
 
 -- Empêche d'avoir des prix ou des quantités négatives
 ALTER TABLE public.cotation_COT ADD CONSTRAINT check_prix_positif CHECK (COT_prix_unitaire > 0);
@@ -128,7 +128,7 @@ CHECK (mvt_type_mouvement IN ('ACHAT', 'VENTE', 'DIVIDENDE', 'APPORT', 'RETRAIT'
 
 -- Empêche d'avoir deux fois la même cotation d'un produit pour un même jour
 ALTER TABLE public.cotation_cot 
-ADD CONSTRAINT unique_cotation UNIQUE (pdt_id, cot_date_prix);
+ADD CONSTRAINT unique_cotation UNIQUE (pdt_id, cot_date);
 
 
 
