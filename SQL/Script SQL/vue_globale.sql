@@ -40,7 +40,6 @@ derniere_cotation AS (
 SELECT 
     vpa.pdt_id,
     vpa.ptf_id,
-    vpa.pdt_nom_produit,
     vpa.pdt_cash,
     vpa.pdt_est_actif,
     vpa.quantite_detenue,

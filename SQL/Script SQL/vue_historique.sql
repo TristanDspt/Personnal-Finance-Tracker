@@ -50,7 +50,7 @@ historique_cumule AS (
     -- Transformation des flux quotidiens en soldes cumulés (Sommes glissantes)
     SELECT 
         jour, pdt_id, ptf_id, pdt_cash,
-        SUM(mvt_parts_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as solde_parts,
+        SUM(mvt_parts_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as quantite_detenue,
         SUM(effort_perso_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as capital_investi,
         SUM(abondement_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as abondement_recu,
         SUM(investi_brut_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as total_investi_histo,
@@ -75,11 +75,12 @@ historique_final AS (
 -- ==========================================================
 -- SELECTION FINALE : Calculs des indicateurs métiers
 -- ==========================================================
-SELECT 
-    jour, 
-    pdt_id, 
-    ptf_id, 
-    solde_parts,
+SELECT  
+    hc.pdt_id, 
+    hc.ptf_id,
+    pdt.pdt_cash,
+    pdt.pdt_est_actif,
+    quantite_detenue,
     
     -- 1. Effort financier de l'utilisateur (Argent sorti de sa poche)
     capital_investi as capital_investi,
@@ -89,22 +90,24 @@ SELECT
 
     -- 3. Valeur actuelle (Prix du marché * Quantité / ou Solde si cash)
     CASE 
-        WHEN pdt_cash = True THEN solde_parts
-        ELSE solde_parts * COALESCE(prix_a_jour, 0) 
+        WHEN hc.pdt_cash = True THEN quantite_detenue
+        ELSE quantite_detenue * COALESCE(prix_a_jour, 0) 
     END as capital_actuel,
 
     -- 4. Profit en Euros : (Valeur Actuelle + Sorties Cash) - Entrées Cash
     -- On force à 0 pour le cash car il ne génère pas de profit en soi
     CASE 
-        WHEN pdt_cash = True THEN 0
+        WHEN hc.pdt_cash = True THEN 0
         ELSE (
-            (solde_parts * COALESCE(prix_a_jour, 0)) 
+            (quantite_detenue * COALESCE(prix_a_jour, 0)) 
             + total_encaisse_histo 
             - total_investi_histo
         )
-    END as profit_euro
+    END as profit_euro,
+    jour
 
-FROM historique_final
+FROM historique_final hc
+JOIN public.produit_financier_pdt pdt ON hc.pdt_id = pdt.pdt_id
 -- On filtre pour ne pas afficher les produits avant leur achat ou après leur clôture totale
-WHERE solde_parts > 0 OR capital_investi > 0
+WHERE quantite_detenue > 0 OR capital_investi > 0
 ORDER BY jour DESC, pdt_id;
