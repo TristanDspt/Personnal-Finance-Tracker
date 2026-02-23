@@ -18,6 +18,7 @@ bourse_log.txt
 scripts/imports/
 explo.ipynb
 .vscode/
+dash_pft.pbix
 
 # --- RUN ---
 # On ignore les fichiers de lancement (optionnel, mais propre)

@@ -1,4 +1,4 @@
-# 🚀 ROADMAP : Portfolio Finance Tracker
+# 🚀 ROADMAP : Personnal Finance Tracker
 
 ### 🏠 1. Homepage
 - ~~integration du tableau~~ ✅
