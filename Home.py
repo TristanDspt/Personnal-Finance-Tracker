@@ -173,7 +173,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>🕰️ Historique</h3>", unsafe_allow_html=True)
+# st.markdown("<h2 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>🕰️ Historique</h2>", unsafe_allow_html=True)
 
 _, col1, col2, col3, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
@@ -276,9 +276,9 @@ with col6: st.plotly_chart(fig_liv, use_container_width=True, config={'displayMo
 
 st.divider()
 
-# --- 4. TABLEAU GLOBAL --- (réactif au slider)
+# --- 4. JOURNAL DE BORD --- (réactif au slider)
 
-st.markdown(f"<h3 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📊 Performance : {duree}</h3>", unsafe_allow_html=True)
+st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -322,7 +322,82 @@ with col5:
         help="Rendement total par rapport au capital investi"
     )
 
-# Ton st.dataframe(df_filtre) ici
+# LE TABLEAU
+
+# Mapping calendaire
+mapping_nb_mois = {
+    "1 Mois": 1, 
+    "3 Mois": 3, 
+    "6 Mois": 6, 
+    "1 An": 12, 
+    "3 Ans": 36, 
+    "5 Ans": 60, 
+    "Max": 600
+}
+nb_mois_voulus = mapping_nb_mois[duree]
+debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+date_depart_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois_voulus)
+
+# Mapping par PTF_ID
+mapping_ptf = {
+    1: "ETF", 
+    2: "ETF", 
+    3: "STEF", 
+    4: "CiC",
+    6: "Livrets",
+}
+
+# Création du DF
+df_mensuel = df_histo.query("pdt_est_actif == True").copy()
+df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping_ptf)
+
+df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
+                 .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
+                 .reset_index())
+
+df_pivot = (df_journalier.groupby(['Enveloppe', pd.Grouper(key='jour', freq='ME')])
+            .agg({'capital_actuel': 'last', 'capital_investi': 'last'})
+            .unstack(level=0))
+
+df_final = df_pivot['capital_actuel'].copy()
+
+# Calcul des colonnes
+df_final['Total'] = df_final.sum(axis=1)
+
+df_final['Perf (€)'] = df_final['Total'].diff()
+
+injecte_mois = df_pivot['capital_investi'].sum(axis=1).diff()
+df_final['Perf Réelle'] = df_final['Perf (€)'] - injecte_mois
+
+df_final['Perf (%)'] = (df_final['Total'].diff() / df_final['Total'].shift(1)) * 100
+
+df_final['Perf 12m (€)'] = df_final['Total'] - df_final['Total'].shift(12)
+
+df_final['Perf 12m (%)'] = (df_final['Perf 12m (€)'] / df_final['Total'].shift(12)) * 100
+
+# Nettoyage
+df_final = df_final.query("jour >= @date_depart_tableau")
+
+colonnes_ordre = [
+    'ETF', 'STEF', 'CiC', 'Livret', 'Total', 
+    'Perf (€)', 'Perf (%)', 'Perf Réelle', 
+    'Perf 12m (€)', 'Perf 12m (%)'
+]
+df_final = df_final[[c for c in colonnes_ordre if c in df_final.columns and df_final[c].notna().any()]]
+df_final = df_final.iloc[1:].sort_index(ascending=False)
+df_final.index = df_final.index.strftime('%B %Y')
+
+st.dataframe(
+    df_final.style.format({
+        'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
+        'Livret': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
+        'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.2f} €",
+        'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.2f} %"
+    }, na_rep='-')
+    .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
+              subset=[c for c in ['Perf (€)', 'Perf (%)', 'Perf Réelle'] if c in df_final.columns]), 
+    use_container_width=True
+)
 
 st.divider()
 
