@@ -3,6 +3,7 @@
 ### 🏠 1. Homepage
 - ~~integration du tableau~~ ✅
 - ~~rendre le slider de selection de période actif~~ ✅
+- **Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage) 🚨 **URGENT**
 - **graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + idée à trouver ou non ? ⏳
 
 ### 📊 2. Page Dashboards
