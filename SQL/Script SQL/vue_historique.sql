@@ -83,7 +83,7 @@ SELECT
     quantite_detenue,
     
     -- 1. Effort financier de l'utilisateur (Argent sorti de sa poche)
-    capital_investi as capital_investi,
+    capital_investi,
     
     -- 2. Argent "offert" par l'entreprise
     abondement_recu,
