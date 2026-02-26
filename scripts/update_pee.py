@@ -15,17 +15,17 @@ print("\nConnexion établie !")
 params_stef = {
     "sep": ";",
     "header": 0,
-    "names": ["cot_date_prix", "cot_prix_unitaire"],
+    "names": ["cot_date", "cot_prix"],
     "usecols": [0, 1],
-    "parse_dates": ["cot_date_prix"],
+    "parse_dates": ["cot_date"],
     "dayfirst": True,
 }
 
 params_cic = {
     "skiprows": 2,
-    "names": ["cot_date_prix", "cot_prix_unitaire"],
+    "names": ["cot_date", "cot_prix"],
     "usecols": [0, 1],
-    "parse_dates": ["cot_date_prix"],
+    "parse_dates": ["cot_date"],
     "date_format": "%d/%m/%Y",
     "decimal": ",",
 }
@@ -87,8 +87,8 @@ for pdt_id, param in config_auto.items():
 
     # --- ETAPE C : COMPARAISON ET ENVOI ---
     # 1. On récupère la date max en SQL pour ce pdt_id spécifique
-    date_fichier = df["cot_date_prix"].max()
-    query = f"SELECT MAX(cot_date_prix) FROM cotation_cot WHERE pdt_id = {pdt_id}"
+    date_fichier = df["cot_date"].max()
+    query = f"SELECT MAX(cot_date) FROM cotation_cot WHERE pdt_id = {pdt_id}"
     with engine.connect() as conn:
         res = pd.read_sql(query, conn).iloc[0, 0] # On stocke le résultat brut (Pandas n'aime pas le type datetime de SQL)
         date_db = pd.to_datetime(res) if res is not None else None # On convertit pour que Pandas soit content
@@ -98,7 +98,7 @@ for pdt_id, param in config_auto.items():
             if date_db is None:
                 df_neuf = df
             else:
-                df_neuf = df[df["cot_date_prix"] > date_db]
+                df_neuf = df[df["cot_date"] > date_db]
 
             # On n'envoie que si le filtre n'est pas vide
             if not df_neuf.empty:

@@ -31,7 +31,7 @@ query = """
 df_liste_ticker = pd.read_sql(query, engine)
 
 # 3. On demande à la base la date la plus récente qu'on possède
-query_last_date = "SELECT MAX(cot_date_prix) FROM public.cotation_cot"  # SELECT MAX envoi NONE si la table est vide
+query_last_date = "SELECT MAX(cot_date) FROM public.cotation_cot"  # SELECT MAX envoi NONE si la table est vide
 last_date_in_db = pd.read_sql(query_last_date, engine).iloc[0, 0]
 
 # 4. On définit la date de début pour Yahoo Finance
@@ -58,9 +58,9 @@ for index, row in df_liste_ticker.iterrows():
 
         if not df_temp.empty:
             df_temp = df_temp["Close"].reset_index()
-            df_temp.columns = ["cot_date_prix", "cot_prix_unitaire"]
+            df_temp.columns = ["cot_date", "cot_prix"]
             df_temp["pdt_id"] = pdt_id
-            df_temp["cot_date_prix"] = pd.to_datetime(df_temp["cot_date_prix"]).dt.date
+            df_temp["cot_date"] = pd.to_datetime(df_temp["cot_date"]).dt.date
 
             # On injecte uniquement les nouvelles lignes
             df_temp.to_sql("cotation_cot", engine, if_exists="append", index=False)
