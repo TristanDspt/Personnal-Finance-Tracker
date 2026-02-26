@@ -45,17 +45,19 @@ duree = st.sidebar.select_slider(
 
 # 1. Traduction en jours
 mapping_duree = {
-    "1 Mois": 30, 
-    "3 Mois": 90, 
-    "6 Mois": 180, 
-    "1 An": 365, 
-    "3 Ans": 1095, 
-    "5 Ans": 1825, 
-    "Max": 18250}
-jours = mapping_duree[duree]
+    "1 Mois": 1, 
+    "3 Mois": 3, 
+    "6 Mois": 6, 
+    "1 An": 12, 
+    "3 Ans": 36, 
+    "5 Ans": 60, 
+    "Max": 600
+}
+nb_mois = mapping_duree[duree]
 
 # 2. Définition de la date pivot
-date_debut = pd.Timestamp.now() - pd.Timedelta(days=jours)
+# date_debut = pd.Timestamp.now() - pd.Timedelta(days=jours)
+date_debut = pd.Timestamp.now() - pd.DateOffset(months=nb_mois)
 
 # 3. Création des DataFrames filtrés
 # On convertit en datetime si ce n'est pas fait à l'import
@@ -325,18 +327,8 @@ with col5:
 # LE TABLEAU
 
 # Mapping calendaire
-mapping_nb_mois = {
-    "1 Mois": 1, 
-    "3 Mois": 3, 
-    "6 Mois": 6, 
-    "1 An": 12, 
-    "3 Ans": 36, 
-    "5 Ans": 60, 
-    "Max": 600
-}
-nb_mois_voulus = mapping_nb_mois[duree]
 debut_mois_actuel = pd.Timestamp.now().replace(day=1)
-date_depart_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois_voulus)
+date_depart_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
 # Mapping par PTF_ID
 mapping_ptf = {
@@ -379,7 +371,7 @@ df_final['Perf 12m (%)'] = (df_final['Perf 12m (€)'] / df_final['Total'].shift
 df_final = df_final.query("jour >= @date_depart_tableau")
 
 colonnes_ordre = [
-    'ETF', 'STEF', 'CiC', 'Livret', 'Total', 
+    'ETF', 'STEF', 'CiC', 'Livrets', 'Total', 
     'Perf (€)', 'Perf (%)', 'Perf Réelle', 
     'Perf 12m (€)', 'Perf 12m (%)'
 ]
@@ -390,7 +382,7 @@ df_final.index = df_final.index.strftime('%B %Y')
 st.dataframe(
     df_final.style.format({
         'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
-        'Livret': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
+        'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
         'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.2f} €",
         'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.2f} %"
     }, na_rep='-')
