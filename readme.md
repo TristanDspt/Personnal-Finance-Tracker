@@ -79,4 +79,4 @@ Pour faire fonctionner l'application, vous devez créer :
 - **Gestion DB :** DBeaver
 
 ---
-*Projet développé par Tristan dans le cadre d'une reconversion Data Analyst.*
+*Projet développé par Tristan dans le cadre d'une reconversion Data Analyst / Dev IA.*
