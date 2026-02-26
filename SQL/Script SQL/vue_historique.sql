@@ -5,41 +5,41 @@
 
 CREATE OR REPLACE VIEW view_historique_portefeuille AS
 WITH date_range AS (
-    -- Génère un calendrier complet du premier mouvement à aujourd'hui
+    -- 1. Génère un calendrier complet du premier mouvement à aujourd'hui
+    -- Cela permet de ne pas avoir de "trous" dans les graphiques
     SELECT generate_series(MIN(mvt_date), CURRENT_DATE, '1 day')::date AS jour 
     FROM public.mouvement_mvt
 ),
 produits AS (
-    -- Récupère la liste des produits pour savoir s'il s'agit de CASH ou de TITRES
+    -- 2. Récupère la liste des produits et leur nature (Cash vs Titre)
     SELECT pdt_id, ptf_id, pdt_cash FROM public.produit_financier_pdt
 ),
 grille_vide AS (
-    -- Crée une ligne par jour et par produit (matrice vide pour remplir les trous)
+    -- 3. Crée une matrice (Jour x Produit) pour calculer les soldes chaque jour
     SELECT d.jour, p.pdt_id, p.ptf_id, p.pdt_cash FROM date_range d CROSS JOIN produits p
 ),
 mouvements_cumules AS (
-    -- Agrégation des flux quotidiens par produit
+    -- 4. Agrégation des flux quotidiens par produit
     SELECT 
         gv.jour, gv.pdt_id, gv.ptf_id, gv.pdt_cash,
-        -- Somme des parts du jour
+        
+        -- Variation du nombre de parts (ou montant si cash) le jour J
         COALESCE(SUM(mvt.mvt_nb_parts), 0) as mvt_parts_jour,
         
-        -- EFFORT PERSO (Le dénominateur de TA performance)
+        -- CALCUL DE L'EFFORT PERSO (Capital Investi)
+        -- REGLE D'OR : On ne compte l'effort que lorsque l'argent entre sur le compte CASH.
+        -- Quand tu achètes une action, le cash diminue (effort baisse) et l'action augmente (effort = 0).
+        -- Ainsi, l'achat est neutre sur ton capital investi total.
         COALESCE(SUM(CASE 
-            -- Pour le CASH : On prend le solde net (Dépôts - Retraits). 
-            -- C'est la clé pour éviter de compter 2x le capital lors d'un achat d'action.
             WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts 
-            -- Pour les TITRES : On ne somme que les ACHATS (flux entrants) hors abondement.
-            WHEN mvt.mvt_nb_parts > 0 AND (mvt.mvt_type_mouvement != 'ABONDEMENT' OR mvt.mvt_type_mouvement IS NULL) 
-            THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais 
             ELSE 0 
         END), 0) as effort_perso_jour,
 
-        -- Somme des abondements reçus ce jour
+        -- Abondements (Argent offert par l'entreprise, n'est pas un effort perso)
         COALESCE(SUM(CASE WHEN mvt.mvt_type_mouvement = 'ABONDEMENT' 
                           THEN (mvt.mvt_nb_parts * mvt.mvt_prix) ELSE 0 END), 0) as abondement_jour,
 
-        -- Variables de calcul du Profit (entrées totales vs sorties totales)
+        -- Variables pour le calcul du profit historique (flux entrants vs sortants)
         COALESCE(SUM(CASE WHEN mvt.mvt_nb_parts > 0 THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais ELSE 0 END), 0) as investi_brut_jour,
         COALESCE(SUM(CASE WHEN mvt.mvt_nb_parts < 0 THEN ABS(mvt.mvt_nb_parts * mvt.mvt_prix) ELSE 0 END), 0) as encaisse_jour
     FROM grille_vide gv
@@ -47,7 +47,7 @@ mouvements_cumules AS (
     GROUP BY gv.jour, gv.pdt_id, gv.ptf_id, gv.pdt_cash
 ),
 historique_cumule AS (
-    -- Transformation des flux quotidiens en soldes cumulés (Sommes glissantes)
+    -- 5. Transformation des flux quotidiens en soldes cumulés (Sommes glissantes)
     SELECT 
         jour, pdt_id, ptf_id, pdt_cash,
         SUM(mvt_parts_jour) OVER (PARTITION BY pdt_id ORDER BY jour) as quantite_detenue,
@@ -58,7 +58,7 @@ historique_cumule AS (
     FROM mouvements_cumules
 ),
 historique_prix_groupes AS (
-    -- Jointure avec les cotations et création de groupes pour le "Forward Fill" (combler les jours sans prix)
+    -- 6. Gestion des prix : on associe les cotations et on prépare le remplissage des jours vides (week-ends)
     SELECT 
         hc.*, cot.cot_prix,
         COUNT(cot.cot_prix) OVER (PARTITION BY hc.pdt_id ORDER BY hc.jour) as grp_prix
@@ -66,14 +66,14 @@ historique_prix_groupes AS (
     LEFT JOIN public.cotation_cot cot ON hc.jour = cot.cot_date AND hc.pdt_id = cot.pdt_id
 ),
 historique_final AS (
-    -- On récupère le dernier prix connu pour chaque jour
+    -- 7. "Forward Fill" : on récupère le dernier prix connu si pas de cotation ce jour-là
     SELECT 
         *,
         FIRST_VALUE(cot_prix) OVER (PARTITION BY pdt_id, grp_prix ORDER BY jour) as prix_a_jour
     FROM historique_prix_groupes
 )
 -- ==========================================================
--- SELECTION FINALE : Calculs des indicateurs métiers
+-- SELECTION FINALE : Calculs des indicateurs de performance
 -- ==========================================================
 SELECT  
     hc.pdt_id, 
@@ -82,20 +82,19 @@ SELECT
     pdt.pdt_est_actif,
     quantite_detenue,
     
-    -- 1. Effort financier de l'utilisateur (Argent sorti de sa poche)
+    -- Capital Investi : L'argent réel sorti de ta poche à date
     capital_investi,
     
-    -- 2. Argent "offert" par l'entreprise
+    -- Abondements : Cumul des primes employeurs
     abondement_recu,
 
-    -- 3. Valeur actuelle (Prix du marché * Quantité / ou Solde si cash)
+    -- Capital Actuel : Valeur de revente estimée au prix du jour
     CASE 
         WHEN hc.pdt_cash = True THEN quantite_detenue
         ELSE quantite_detenue * COALESCE(prix_a_jour, 0) 
     END as capital_actuel,
 
-    -- 4. Profit en Euros : (Valeur Actuelle + Sorties Cash) - Entrées Cash
-    -- On force à 0 pour le cash car il ne génère pas de profit en soi
+    -- Profit Euro : (Valeur Actuelle + Cash déjà retiré) - (Cash total injecté historiquement)
     CASE 
         WHEN hc.pdt_cash = True THEN 0
         ELSE (
@@ -108,6 +107,6 @@ SELECT
 
 FROM historique_final hc
 JOIN public.produit_financier_pdt pdt ON hc.pdt_id = pdt.pdt_id
--- On filtre pour ne pas afficher les produits avant leur achat ou après leur clôture totale
-WHERE quantite_detenue > 0 OR capital_investi > 0
+-- On masque les lignes inutiles (produits pas encore achetés ou totalement vendus sans historique)
+WHERE quantite_detenue != 0 OR capital_investi != 0
 ORDER BY jour DESC, pdt_id;
