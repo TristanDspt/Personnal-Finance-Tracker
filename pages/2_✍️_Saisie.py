@@ -152,8 +152,13 @@ def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_n
         type_txt = str(p_type).upper()
     # Gestion des ventes / retrait à passer en négatif
     if p_type in ["Vente", "Retrait"]:
+        # On force le négatif quoi qu'il arrive
         type_pos = -abs(p_qte)
+    elif p_type in ["Ajustement"]:
+        # On garde le signe saisi par l'utilisateur (permet de corriger + ou -)
+        type_pos = p_qte
     else:
+        # Pour les achats/dépôts, on force le positif
         type_pos = abs(p_qte)
 
     # On adapte l'affichage selon si c'est du Cash ou des Actions
