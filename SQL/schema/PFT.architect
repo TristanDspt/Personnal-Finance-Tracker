@@ -109,10 +109,10 @@
     <column id="COL28" populated="true" UUID="ef2251de-207b-442d-bf79-e9237a9dc000" autoIncrement="true" autoIncrementSequenceName="cotation_COT_COT_id_seq" defaultValue="" name="COT_id" nullable="0" physicalName="COT_id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
      <remarks></remarks>
     </column>
-    <column id="COL29" populated="true" UUID="667ccc71-d937-4fd5-8eba-b42b3860bbb8" autoIncrement="false" autoIncrementSequenceName="cotation_COT_COT_date_prix_seq" defaultValue="" name="COT_date_prix" nullable="0" physicalName="COT_date_prix" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="91" userDefinedTypeUUID="ee349be3-6af2-46e1-b305-975f5354b009" >
+    <column id="COL29" populated="true" UUID="667ccc71-d937-4fd5-8eba-b42b3860bbb8" autoIncrement="false" autoIncrementSequenceName="cotation_COT_COT_date_seq" defaultValue="" name="COT_date" nullable="0" physicalName="COT_date" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="91" userDefinedTypeUUID="ee349be3-6af2-46e1-b305-975f5354b009" >
      <remarks></remarks>
     </column>
-    <column id="COL30" populated="true" UUID="77fde0e0-a9b3-4fff-92b2-613c6767b7c2" autoIncrement="false" autoIncrementSequenceName="cotation_COT_COT_prix_unitaire_seq" defaultValue="" name="COT_prix_unitaire" nullable="0" physicalName="COT_prix_unitaire" precision="7" referenceCount="1" scale="4" sourceDataTypeName="UserDefinedSQLType" type="2" userDefinedTypeUUID="115245ce-612c-4d6a-b559-6dd903dd959a" >
+    <column id="COL30" populated="true" UUID="77fde0e0-a9b3-4fff-92b2-613c6767b7c2" autoIncrement="false" autoIncrementSequenceName="cotation_COT_COT_prix_seq" defaultValue="" name="COT_prix" nullable="0" physicalName="COT_prix" precision="7" referenceCount="1" scale="4" sourceDataTypeName="UserDefinedSQLType" type="2" userDefinedTypeUUID="115245ce-612c-4d6a-b559-6dd903dd959a" >
      <remarks></remarks>
     </column>
     <column id="COL31" populated="true" UUID="71726c4f-9f94-40a5-b91b-6d1749bd632f" autoIncrement="false" defaultValue="" name="PDT_id" nullable="0" physicalName="PDT_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >

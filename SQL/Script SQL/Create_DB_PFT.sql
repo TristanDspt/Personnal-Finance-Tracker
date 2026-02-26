@@ -117,7 +117,7 @@ ALTER TABLE public.cotation_COT
 ADD CONSTRAINT unique_cotation_par_jour UNIQUE (PDT_id, COT_date);
 
 -- Empêche d'avoir des prix ou des quantités négatives
-ALTER TABLE public.cotation_COT ADD CONSTRAINT check_prix_positif CHECK (COT_prix_unitaire > 0);
+ALTER TABLE public.cotation_COT ADD CONSTRAINT check_prix_positif CHECK (COT_prix > 0);
 
 ALTER TABLE public.mouvement_MVT ADD CONSTRAINT check_parts_non_null CHECK (MVT_nb_parts <> 0);
 
