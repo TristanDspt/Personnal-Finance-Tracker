@@ -36,12 +36,32 @@ df_histo = pd.read_sql("SELECT * FROM view_historique_portefeuille", engine)
 st.markdown("<h1 style='text-align: center; margin-bottom: 0px;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
 st.divider() # Un petit trait pour séparer proprement
 
-# --- 2. FILTRES & LOGIQUE TEMPORELLE ---
+# Sidebar
 
-duree = st.sidebar.select_slider(
-    "Période d'analyse", 
-    options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"], 
-)
+with st.sidebar:
+    st.title("⚙️ Menu")
+    
+    st.subheader("💰 Cash en attente")
+
+    cash_pea = df.query("pdt_id == 7")['capital_actuel'].fillna(0).iloc[0]
+    cash_cto = df.query("pdt_id == 8")['capital_actuel'].fillna(0).iloc[0]
+    
+    st.write(f"**PEA :** `{cash_pea:,.2f} €`")
+    st.write(f"**CTO :** `{cash_cto:,.2f} €`")
+
+    if cash_pea > 400:
+        st.warning(f"⚠️ {cash_pea}€ dorment sur le PEA !")
+
+    st.divider()
+
+    st.subheader("🛠️ Configuration")
+    duree = st.select_slider(
+        "Période d'analyse", 
+        options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"], 
+    )
+    vue_12m = st.toggle("Afficher les 12 mois roulants", value=False)
+
+# --- 2. LOGIQUE TEMPORELLE ---
 
 # 1. Traduction en jours
 mapping_duree = {
@@ -372,20 +392,25 @@ df_final = df_final.query("jour >= @date_depart_tableau")
 
 colonnes_ordre = [
     'ETF', 'STEF', 'CiC', 'Livrets', 'Total', 
-    'Perf (€)', 'Perf (%)', 'Perf Réelle', 
-    'Perf 12m (€)', 'Perf 12m (%)'
+    'Perf (€)', 'Perf (%)', 'Perf Réelle'
 ]
+if vue_12m:
+    colonnes_ordre.extend(['Perf 12m (€)', 'Perf 12m (%)'])
+
 df_final = df_final[[c for c in colonnes_ordre if c in df_final.columns and df_final[c].notna().any()]]
 df_final = df_final.iloc[1:].sort_index(ascending=False)
 df_final.index = df_final.index.strftime('%B %Y')
 
-st.dataframe(
-    df_final.style.format({
+format_complet = {
         'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
         'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
         'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.2f} €",
         'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.2f} %"
-    }, na_rep='-')
+    }
+format_filtre = {k: v for k, v in format_complet.items() if k in df_final.columns}
+
+st.dataframe(
+    df_final.style.format(format_filtre, na_rep='-')
     .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
               subset=[c for c in ['Perf (€)', 'Perf (%)', 'Perf Réelle'] if c in df_final.columns]), 
     use_container_width=True
