@@ -4,7 +4,8 @@
 - ~~integration du tableau~~ ✅
 - ~~rendre le slider de selection de période actif~~ ✅
 - **Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage) 🚨 **URGENT**
-- **graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + idée à trouver ou non ? ⏳
+- **Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ? ⏳
+- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB
 
 ### 📊 2. Page Dashboards
 *Utiliser st.radio pour selectionner les differents dashboards ? ou plusieurs pages ?*
