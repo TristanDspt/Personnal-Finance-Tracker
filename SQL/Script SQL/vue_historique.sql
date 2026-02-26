@@ -28,10 +28,9 @@ mouvements_cumules AS (
         
         -- CALCUL DE L'EFFORT PERSO (Capital Investi)
         -- REGLE D'OR : On ne compte l'effort que lorsque l'argent entre sur le compte CASH.
-        -- Quand tu achètes une action, le cash diminue (effort baisse) et l'action augmente (effort = 0).
-        -- Ainsi, l'achat est neutre sur ton capital investi total.
         COALESCE(SUM(CASE 
             WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts 
+            WHEN gv.pdt_cash = False AND mvt.mvt_type_mouvement IN ('Achat', 'Vente') THEN (mvt.mvt_nb_parts * mvt.mvt_prix)
             ELSE 0 
         END), 0) as effort_perso_jour,
 
