@@ -47,12 +47,28 @@ La base est normalisée pour garantir l'intégrité des données financières :
 * `cotation_COT` : Historique des prix.
 * **Contraintes :** Utilisation stricte de clés étrangères, de contraintes d'unicité (Ticker/Date) et de checks de validité (Prix > 0).
 
+## 📝 Conventions de saisie
+
+### Types de mouvements (`mvt_type_mouvement`)
+| Type | Usage |
+| :--- | :--- |
+| `APPORT` | Dépôt cash sur livret/poche broker OU versement sur PEE |
+| `RETRAIT` | Retrait cash réel (livret, sortie d'argent) |
+| `RETRAIT_MIROIR` | Débit automatique poche cash lors d'un achat ETF (généré automatiquement) |
+| `ABONDEMENT` | Prime employeur sur PEE (ne compte pas comme effort perso) |
+| `ACHAT` | Achat ETF/Action sur PEA ou CTO uniquement |
+| `VENTE` | Vente ETF/Action |
+
+### ⚠️ Ajout d'un nouveau PEE
+Les versements PEE doivent être saisis en `APPORT` (pas `ACHAT`) pour être correctement comptabilisés dans le calcul de la Perf Marchés.
+
 ## ⚙️ Installation & Setup
 1. Cloner le repo.
-2. Installer les dépendances : `pip install -r requirements.txt`.
-3. Configurer le fichier `.streamlit/secrets.toml` avec les accès PostgreSQL.
-4. Configurer le fichier `config.py` avec les accès PostgreSQL.
-5. Lancer l'application : `streamlit run home.py`.
+2. initialiser la DB : `psql -f sql/schema/Create_DB_PFT.sql`.
+3. Installer les dépendances : `pip install -r requirements.txt`.
+4. Configurer le fichier `.streamlit/secrets.toml` avec les accès PostgreSQL.
+5. Configurer le fichier `config.py` avec les accès PostgreSQL.
+6. Lancer l'application : `streamlit run home.py`.
 
 ## 🔒 Sécurité & Configuration
 Le projet utilise un fichier `.gitignore` pour protéger les données sensibles. 
@@ -72,6 +88,7 @@ Pour faire fonctionner l'application, vous devez créer :
 - [x] Modélisation de la base de données (PostgreSQL)
 - [x] Application Streamlit : Formulaires de saisie manuelle
 - [ ] Application Streamlit : Dashboard de DataViz (En cours)
+- [ ] Pages dédiées PEA / CTO / PEE(s)
 
 ## ⚙️ Configuration
 - **OS :** Windows 10/11
