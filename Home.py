@@ -29,6 +29,16 @@ engine = get_engine()
 #IMPORT DES VUE SQL
 df = pd.read_sql("SELECT * FROM view_global_portefeuille", engine)
 df_histo = pd.read_sql("SELECT * FROM view_historique_portefeuille", engine)
+df_apports = pd.read_sql("""
+    SELECT 
+        DATE_TRUNC('month', mvt_date) + INTERVAL '1 month' - INTERVAL '1 day' as mois, 
+        SUM(mvt_nb_parts) as injecte
+    FROM mouvement_mvt mvt
+    JOIN produit_financier_pdt pdt ON mvt.pdt_id = pdt.pdt_id
+    WHERE pdt_cash = TRUE AND mvt_type_mouvement = 'APPORT'
+    GROUP BY DATE_TRUNC('month', mvt_date)
+    ORDER BY mois
+""", engine)
 
 # INTERFACE GRAPHIQUE
 
@@ -379,21 +389,10 @@ df_final['Total'] = df_final.sum(axis=1)
 
 df_final['Perf (€)'] = df_final['Total'].diff()
 
-injecte_mois = df_pivot['capital_investi'].sum(axis=1).diff()
+df_apports['mois'] = df_apports['mois'].apply(lambda x: pd.Timestamp(x).replace(tzinfo=None).normalize())
+df_apports = df_apports.set_index('mois')
+injecte_mois = df_apports['injecte'].reindex(df_final.index, fill_value=0)
 df_final['Perf Réelle'] = df_final['Perf (€)'] - injecte_mois
-
-# --- LE FIX DES 500€ (Jan 2024 à Jan 2026) ---
-# On crée un masque sur l'index (qui est en Period ou Datetime)
-mask_effort = (df_final.index >= '2024-01-01') & (df_final.index <= '2026-01-31')
-
-# On applique la correction
-df_final.loc[mask_effort, 'Perf Réelle'] = df_final.loc[mask_effort, 'Perf Réelle'] - 500
-
-df_final['Perf (%)'] = (df_final['Total'].diff() / df_final['Total'].shift(1)) * 100
-
-df_final['Perf 12m (€)'] = df_final['Total'] - df_final['Total'].shift(12)
-
-df_final['Perf 12m (%)'] = (df_final['Perf 12m (€)'] / df_final['Total'].shift(12)) * 100
 
 # Nettoyage
 df_final = df_final.query("jour >= @date_depart_tableau")

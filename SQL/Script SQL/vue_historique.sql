@@ -31,7 +31,7 @@ mouvements_cumules AS (
 		    -- 1. Sur la ligne CASH : 
 		    -- On compte les dépôts (+) ET on retire les achats de titres (-) 
 		    -- (mvt_nb_parts sur le cash est le montant en €)
-		    WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts 
+		    WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts
 		    
 		    -- 2. Sur la ligne TITRE : 
 		    -- On compte l'achat comme un effort (+)
