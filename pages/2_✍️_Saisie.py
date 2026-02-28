@@ -201,7 +201,7 @@ def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_n
                 
                 if p_type == "Achat":
                     montant_cash = -(montant_mouvement_titre + p_frais)
-                    type_cash = "RETRAIT"
+                    type_cash = "RETRAIT_MIROIR"
                 elif p_type == "Vente":
                     montant_cash = (montant_mouvement_titre - p_frais)
                     type_cash = "APPORT"

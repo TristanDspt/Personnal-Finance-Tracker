@@ -29,16 +29,7 @@ engine = get_engine()
 #IMPORT DES VUE SQL
 df = pd.read_sql("SELECT * FROM view_global_portefeuille", engine)
 df_histo = pd.read_sql("SELECT * FROM view_historique_portefeuille", engine)
-df_apports = pd.read_sql("""
-    SELECT 
-        DATE_TRUNC('month', mvt_date) + INTERVAL '1 month' - INTERVAL '1 day' as mois, 
-        SUM(mvt_nb_parts) as injecte
-    FROM mouvement_mvt mvt
-    JOIN produit_financier_pdt pdt ON mvt.pdt_id = pdt.pdt_id
-    WHERE pdt_cash = TRUE AND mvt_type_mouvement = 'APPORT'
-    GROUP BY DATE_TRUNC('month', mvt_date)
-    ORDER BY mois
-""", engine)
+df_apports = pd.read_sql("SELECT * FROM view_apports_mensuels", engine)
 
 # INTERFACE GRAPHIQUE
 
@@ -387,19 +378,20 @@ df_final = df_pivot['capital_actuel'].copy()
 # Calcul des colonnes
 df_final['Total'] = df_final.sum(axis=1)
 
-df_final['Perf (€)'] = df_final['Total'].diff()
+df_final['Evo Patrimoine'] = df_final['Total'].diff()
+df_final['Evo (%)'] = (df_final['Evo Patrimoine'] / df_final['Total'].shift(1)) * 100
 
 df_apports['mois'] = df_apports['mois'].apply(lambda x: pd.Timestamp(x).replace(tzinfo=None).normalize())
 df_apports = df_apports.set_index('mois')
 injecte_mois = df_apports['injecte'].reindex(df_final.index, fill_value=0)
-df_final['Perf Réelle'] = df_final['Perf (€)'] - injecte_mois
+df_final['Perf Marchés (€)'] = df_final['Evo Patrimoine'] - injecte_mois
 
 # Nettoyage
 df_final = df_final.query("jour >= @date_depart_tableau")
 
 colonnes_ordre = [
     'ETF', 'STEF', 'CiC', 'Livrets', 'Total', 
-    'Perf (€)', 'Perf (%)', 'Perf Réelle'
+    'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'
 ]
 if vue_12m:
     colonnes_ordre.extend(['Perf 12m (€)', 'Perf 12m (%)'])
@@ -410,16 +402,16 @@ df_final.index = df_final.index.strftime('%B %Y')
 
 format_complet = {
         'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
-        'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
-        'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.0f} €",
-        'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.1f} %"
+        'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Evo Patrimoine': "{:,.2f} €",
+        'Perf Marchés (€)': "{:,.2f} €", 'Perf 12m (€)': "{:,.0f} €",
+        'Evo (%)': "{:.2f} %", 'Perf 12m (%)': "{:.1f} %"
     }
 format_filtre = {k: v for k, v in format_complet.items() if k in df_final.columns}
 
 st.dataframe(
     df_final.style.format(format_filtre, na_rep='-', thousands=" ")
     .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
-              subset=[c for c in ['Perf (€)', 'Perf (%)', 'Perf Réelle'] if c in df_final.columns]), 
+              subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'] if c in df_final.columns]), 
     use_container_width=True
 )
 
