@@ -34,7 +34,7 @@ df_histo = pd.read_sql("SELECT * FROM view_historique_portefeuille", engine)
 
 # --- 1. BLOC TITRE ---
 st.markdown("<h1 style='text-align: center; margin-bottom: 0px;'>🏛️ Personnal Finance Tracker 🏛️</h1>", unsafe_allow_html=True)
-st.divider() # Un petit trait pour séparer proprement
+st.divider()
 
 # Sidebar
 
@@ -46,18 +46,19 @@ with st.sidebar:
     cash_pea = df.query("pdt_id == 7")['capital_actuel'].fillna(0).iloc[0]
     cash_cto = df.query("pdt_id == 8")['capital_actuel'].fillna(0).iloc[0]
     
-    st.write(f"**PEA :** `{cash_pea:,.2f} €`")
-    st.write(f"**CTO :** `{cash_cto:,.2f} €`")
+    st.write(f"**PEA :** `{cash_pea:,.2f} €`".replace(',', ' '))
+    st.write(f"**CTO :** `{cash_cto:,.2f} €`".replace(',', ' '))
 
     if cash_pea > 400:
-        st.warning(f"⚠️ {cash_pea}€ dorment sur le PEA !")
+        st.warning(f"⚠️ {cash_pea:,.2f}€ dorment sur le PEA !".replace(',', ' '))
 
     st.divider()
 
     st.subheader("🛠️ Configuration")
     duree = st.select_slider(
         "Période d'analyse", 
-        options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"], 
+        options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
+        value= "6 Mois"
     )
     vue_12m = st.toggle("Afficher les 12 mois roulants", value=False)
 
@@ -276,7 +277,7 @@ fig_pee.update_layout(common_layout, annotations=[
 
 # Livrets (ID 6)
 df_liv = df.query("pdt_id in [10, 11]").groupby('pdt_id')['capital_actuel'].sum().reset_index()
-df_liv['nom_pour_legende'] = df_liv['pdt_id'].map({10: "Livret A", 11: "PEA"})
+df_liv['nom_pour_legende'] = df_liv['pdt_id'].map({10: "Livret A", 11: "LEP"})
 fig_liv = px.pie(df_liv, 
                  names='nom_pour_legende', 
                  values="capital_actuel", 
@@ -381,6 +382,13 @@ df_final['Perf (€)'] = df_final['Total'].diff()
 injecte_mois = df_pivot['capital_investi'].sum(axis=1).diff()
 df_final['Perf Réelle'] = df_final['Perf (€)'] - injecte_mois
 
+# --- LE FIX DES 500€ (Jan 2024 à Jan 2026) ---
+# On crée un masque sur l'index (qui est en Period ou Datetime)
+mask_effort = (df_final.index >= '2024-01-01') & (df_final.index <= '2026-01-31')
+
+# On applique la correction
+df_final.loc[mask_effort, 'Perf Réelle'] = df_final.loc[mask_effort, 'Perf Réelle'] - 500
+
 df_final['Perf (%)'] = (df_final['Total'].diff() / df_final['Total'].shift(1)) * 100
 
 df_final['Perf 12m (€)'] = df_final['Total'] - df_final['Total'].shift(12)
@@ -404,13 +412,13 @@ df_final.index = df_final.index.strftime('%B %Y')
 format_complet = {
         'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
         'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Perf (€)': "{:,.2f} €",
-        'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.2f} €",
-        'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.2f} %"
+        'Perf Réelle': "{:,.2f} €", 'Perf 12m (€)': "{:,.0f} €",
+        'Perf (%)': "{:.2f} %", 'Perf 12m (%)': "{:.1f} %"
     }
 format_filtre = {k: v for k, v in format_complet.items() if k in df_final.columns}
 
 st.dataframe(
-    df_final.style.format(format_filtre, na_rep='-')
+    df_final.style.format(format_filtre, na_rep='-', thousands=" ")
     .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
               subset=[c for c in ['Perf (€)', 'Perf (%)', 'Perf Réelle'] if c in df_final.columns]), 
     use_container_width=True
