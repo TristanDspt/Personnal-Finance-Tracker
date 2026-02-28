@@ -124,7 +124,7 @@ ALTER TABLE public.mouvement_MVT ADD CONSTRAINT check_parts_non_null CHECK (MVT_
 -- Sécurité sur les types de mouvements autorisés
 ALTER TABLE mouvement_mvt 
 ADD CONSTRAINT check_type_mvt 
-CHECK (mvt_type_mouvement IN ('ACHAT', 'VENTE', 'DIVIDENDE', 'APPORT', 'RETRAIT', 'ABONDEMENT', 'INTERET', 'AJUSTEMENT'));
+CHECK (mvt_type_mouvement IN ('ACHAT', 'VENTE', 'DIVIDENDE', 'APPORT', 'RETRAIT', 'ABONDEMENT', 'INTERET', 'AJUSTEMENT', 'RETRAIT_MIROIR'));
 
 -- Empêche d'avoir deux fois la même cotation d'un produit pour un même jour
 ALTER TABLE public.cotation_cot 
