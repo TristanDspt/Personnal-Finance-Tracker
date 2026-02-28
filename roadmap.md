@@ -5,10 +5,9 @@
 - ~~rendre le slider de selection de période actif~~ ✅
 - **Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage) 🚨 **URGENT**
 - **Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ? ⏳
-- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB
+- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB ⏳
 
 ### 📊 2. Page Dashboards
-*Utiliser st.radio pour selectionner les differents dashboards ? ou plusieurs pages ?*
 - **dash ETF** (qui regroupe les deux ETF) ?? ⏳
 - **dash PEA** ⏳
 - **dash CTO** ⏳
@@ -20,6 +19,7 @@
 - ~~Gestion des Secrets (st.secrets & config.py non publics)~~ ✅
 - **Migration Cloud** : Passer de l'instance PostgreSQL locale à une instance hébergée (Supabase/Neon). ⏳
 - **Authentification** : Ajouter un login pour sécuriser l'accès en ligne. ⏳
+- **Login et MDP** : Ajouter une page de connection ⏳
 
 ### 💡 4. Autres idées à venir
 - **Projection à 10 ans** (intérêts composés basés sur la perf réelle).
