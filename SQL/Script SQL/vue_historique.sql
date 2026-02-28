@@ -27,12 +27,19 @@ mouvements_cumules AS (
         COALESCE(SUM(mvt.mvt_nb_parts), 0) as mvt_parts_jour,
         
         -- CALCUL DE L'EFFORT PERSO (Capital Investi)
-        -- REGLE D'OR : On ne compte l'effort que lorsque l'argent entre sur le compte CASH.
-        COALESCE(SUM(CASE 
-            WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts 
-            WHEN gv.pdt_cash = False AND mvt.mvt_type_mouvement IN ('Achat', 'Vente') THEN (mvt.mvt_nb_parts * mvt.mvt_prix)
-            ELSE 0 
-        END), 0) as effort_perso_jour,
+		COALESCE(SUM(CASE 
+		    -- 1. Sur la ligne CASH : 
+		    -- On compte les dépôts (+) ET on retire les achats de titres (-) 
+		    -- (mvt_nb_parts sur le cash est le montant en €)
+		    WHEN gv.pdt_cash = True THEN mvt.mvt_nb_parts 
+		    
+		    -- 2. Sur la ligne TITRE : 
+		    -- On compte l'achat comme un effort (+)
+		    WHEN gv.pdt_cash = False AND mvt.mvt_nb_parts > 0 AND mvt.mvt_type_mouvement != 'ABONDEMENT' 
+		         THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais
+		    
+		    ELSE 0 
+		END), 0) as effort_perso_jour,
 
         -- Abondements (Argent offert par l'entreprise, n'est pas un effort perso)
         COALESCE(SUM(CASE WHEN mvt.mvt_type_mouvement = 'ABONDEMENT' 
