@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 import plotly.express as px
+import plotly.graph_objects as go
+
 
 # -----------------------------------------------------------------------------------------------------------------
 
@@ -386,25 +388,38 @@ df_apports = df_apports.set_index('mois')
 injecte_mois = df_apports['injecte'].reindex(df_final.index, fill_value=0)
 df_final['Perf Marchés (€)'] = df_final['Evo Patrimoine'] - injecte_mois
 
+df_final['Evo 12m (€)'] = df_final['Total'] - df_final['Total'].shift(12)
+df_final['Evo 12m (%)'] = (df_final['Evo 12m (€)'] / df_final['Total'].shift(12)) * 100
+
 # Nettoyage
 df_final = df_final.query("jour >= @date_depart_tableau")
+
+df_final_graph = df_final.copy()
 
 colonnes_ordre = [
     'ETF', 'STEF', 'CiC', 'Livrets', 'Total', 
     'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'
 ]
 if vue_12m:
-    colonnes_ordre.extend(['Perf 12m (€)', 'Perf 12m (%)'])
+    colonnes_ordre.extend(['Evo 12m (€)', 'Evo 12m (%)'])
 
 df_final = df_final[[c for c in colonnes_ordre if c in df_final.columns and df_final[c].notna().any()]]
 df_final = df_final.iloc[1:].sort_index(ascending=False)
-df_final.index = df_final.index.strftime('%B %Y')
+
+df_final.index.name = 'Mois'
+
+mois_fr = {
+    1: 'Janvier', 2: 'Février', 3: 'Mars', 4: 'Avril',
+    5: 'Mai', 6: 'Juin', 7: 'Juillet', 8: 'Août',
+    9: 'Septembre', 10: 'Octobre', 11: 'Novembre', 12: 'Décembre'
+}
+df_final.index = df_final.index.map(lambda x: f"{mois_fr[x.month]} {x.year}")
 
 format_complet = {
         'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €", 
         'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Evo Patrimoine': "{:,.2f} €",
-        'Perf Marchés (€)': "{:,.2f} €", 'Perf 12m (€)': "{:,.0f} €",
-        'Evo (%)': "{:.2f} %", 'Perf 12m (%)': "{:.1f} %"
+        'Perf Marchés (€)': "{:,.2f} €", 'Evo 12m (€)': "{:,.0f} €",
+        'Evo (%)': "{:.2f} %", 'Evo 12m (%)': "{:.1f} %"
     }
 format_filtre = {k: v for k, v in format_complet.items() if k in df_final.columns}
 
@@ -412,19 +427,81 @@ st.dataframe(
     df_final.style.format(format_filtre, na_rep='-', thousands=" ")
     .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
               subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'] if c in df_final.columns]), 
-    use_container_width=True
+    use_container_width=True, height=min(35 * len(df_final) + 38, 458)
 )
 
 st.divider()
 
-# --- 5. GRAPHIQUES ---
-row1_col1, row1_col2 = st.columns(2)
-with row1_col1:
-    st.write("Graph 1 ?") # Ex: Évolution Capital
+# --- 5. GRAPHIQUE ---
 
-with row1_col2:
-    st.write("Graph 2 ?") # Ex: Allocation
+# Création des DF
+df_apports['cumsum'] = df_apports['injecte'].cumsum()
+df_apports_filtre = df_apports[df_apports.index >= date_depart_tableau]
+df_apports_filtre.index = df_apports_filtre.index.to_period('M').to_timestamp()
+df_apports_filtre = df_apports_filtre.iloc[1:]
 
-row2_col1, row2_col2 = st.columns(2)
-# etc...
+df_capital_graph = df_final_graph.copy()
+df_capital_graph['perf_graph'] = (df_capital_graph['Perf Marchés (€)'] / df_capital_graph['Total'].shift(1)) * 100
+df_capital_graph.index = df_capital_graph.index.to_period('M').to_timestamp()
+df_capital_graph = df_capital_graph.iloc[1:]
+
+# Params
+couleurs = df_capital_graph['perf_graph'].apply(lambda x: '#ff4b4b' if x < 0 else '#09ab3b')
+
+# Dessin
+fig = go.Figure()
+
+# Tu ajoutes des "traces" une par une
+fig.add_trace(go.Scatter(
+    x=df_capital_graph.index,  # ta colonne de dates
+    y=df_capital_graph['Total'],  # ta colonne de valeurs
+    name="Capital",
+    mode='lines+markers',
+    marker=dict(size=4),
+    yaxis="y2",
+    line=dict(color='#FFD700'),
+    hovertemplate="%{y:,.0f} €"
+))
+
+fig.add_trace(go.Scatter(
+    x=df_apports_filtre.index,  # ta colonne de dates
+    y=df_apports_filtre['cumsum'],  # ta colonne de valeurs
+    name="Injecté",
+    mode='lines+markers',
+    marker=dict(size=4),
+    yaxis="y2",
+    line=dict(color='#4DA6FF'),
+    hovertemplate="%{y:,.0f} €"
+))
+
+fig.add_trace(go.Bar(
+    x=df_capital_graph.index,
+    y=df_capital_graph['perf_graph'],
+    name="Perf Marchés",
+    marker=dict(color=couleurs, opacity=0.8),
+    width=1000*3600*24*5,
+    hovertemplate="%{y:,.2f} %"
+))
+
+# Habillage
+y_min = min(df_capital_graph['Total'].min(), df_apports_filtre['cumsum'].min()) * 0.95
+y_max = max(df_capital_graph['Total'].max(), df_apports_filtre['cumsum'].max()) * 1.05
+
+fig.update_layout(
+    yaxis=dict(title="Perf %", showgrid=False),
+    yaxis2=dict(
+        side='right', 
+        overlaying='y', 
+        range=[y_min, y_max],
+        title="Capital (€)"
+        ), 
+    xaxis=dict(dtick="M1", tickformat="%b %Y"), 
+    legend=dict(orientation='h', y=1.1, x=0.5, xanchor='center'),
+    height=600,
+    hovermode='x unified',
+    hoverlabel=dict(font_size=15),
+    separators=". "
+    )
+
+st.plotly_chart(fig, use_container_width=True)
 
