@@ -257,7 +257,7 @@ fig_etf = px.pie(df_etf,
                  color_discrete_map={1: "#822A2A", 2: "#D3AF37"})
 apply_style(fig_etf)
 fig_etf.update_traces(rotation=50)
-fig_etf.update_layout(common_layout, annotations=[
+fig_etf.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=[
     dict(text="Poids ETF", x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
     dict(text=f"<b>{poids_etf:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35))
 ])
@@ -273,7 +273,7 @@ fig_pee = px.pie(df_pee,
                  color_discrete_map={3: "#00519e", 4: "#018289"})
 apply_style(fig_pee)
 fig_pee.update_traces(rotation=80)
-fig_pee.update_layout(common_layout, annotations=[
+fig_pee.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=[
     dict(text="Poids PEE", x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
     dict(text=f"<b>{poids_pee:.0f}%</b>", x=0.517, y=0.4, showarrow=False, font=dict(size=35))
 ])
@@ -289,7 +289,7 @@ fig_liv = px.pie(df_liv,
                  color_discrete_map={10: "#FF8C00", 11: "#540A88"})
 apply_style(fig_liv)
 fig_liv.update_traces(rotation=90)
-fig_liv.update_layout(common_layout, annotations=[
+fig_liv.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=[
     dict(text="Poids Livrets", x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
     dict(text=f"<b>{poids_livret:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35))
 ])
@@ -364,7 +364,7 @@ mapping_ptf = {
 }
 
 # Création du DF
-df_mensuel = df_histo.query("pdt_est_actif == True").copy()
+df_mensuel = df_histo.copy()
 df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping_ptf)
 
 df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
@@ -449,10 +449,10 @@ df_capital_graph = df_capital_graph.iloc[1:]
 couleurs = df_capital_graph['perf_graph'].apply(lambda x: '#ff4b4b' if x < 0 else '#09ab3b')
 
 # Dessin
-fig = go.Figure()
+graph = go.Figure()
 
 # Tu ajoutes des "traces" une par une
-fig.add_trace(go.Scatter(
+graph.add_trace(go.Scatter(
     x=df_capital_graph.index,  # ta colonne de dates
     y=df_capital_graph['Total'],  # ta colonne de valeurs
     name="Capital",
@@ -463,7 +463,7 @@ fig.add_trace(go.Scatter(
     hovertemplate="%{y:,.0f} €"
 ))
 
-fig.add_trace(go.Scatter(
+graph.add_trace(go.Scatter(
     x=df_apports_filtre.index,  # ta colonne de dates
     y=df_apports_filtre['cumsum'],  # ta colonne de valeurs
     name="Injecté",
@@ -474,7 +474,7 @@ fig.add_trace(go.Scatter(
     hovertemplate="%{y:,.0f} €"
 ))
 
-fig.add_trace(go.Bar(
+graph.add_trace(go.Bar(
     x=df_capital_graph.index,
     y=df_capital_graph['perf_graph'],
     name="Perf Marchés",
@@ -487,7 +487,7 @@ fig.add_trace(go.Bar(
 y_min = min(df_capital_graph['Total'].min(), df_apports_filtre['cumsum'].min()) * 0.95
 y_max = max(df_capital_graph['Total'].max(), df_apports_filtre['cumsum'].max()) * 1.05
 
-fig.update_layout(
+graph.update_layout(
     yaxis=dict(title="Perf %", showgrid=False),
     yaxis2=dict(
         side='right', 
@@ -495,7 +495,6 @@ fig.update_layout(
         range=[y_min, y_max],
         title="Capital (€)"
         ), 
-    xaxis=dict(dtick="M1", tickformat="%b %Y"), 
     legend=dict(orientation='h', y=1.1, x=0.5, xanchor='center'),
     height=600,
     hovermode='x unified',
@@ -503,5 +502,4 @@ fig.update_layout(
     separators=". "
     )
 
-st.plotly_chart(fig, use_container_width=True)
-
+st.plotly_chart(graph, use_container_width=True)
