@@ -5,7 +5,8 @@
 - ~~rendre le slider de selection de période actif~~ ✅
 - **Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage) 🚨 **URGENT**
 - ~~**Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ?~~ ✅
-- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB ⏳
+- **Virements Automatiques** : création d'une ligne le 2 du mois pour le PEA et le CTO dans la DB. ⏳
+- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB. ⏳
 
 ### 📊 2. Page Dashboards
 - **dash ETF** (qui regroupe les deux ETF) ?? ⏳
