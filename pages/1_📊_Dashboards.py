@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
+import scripts.database as db
 import plotly.express as px
+import plotly.graph_objects as go
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
 # 0. CONFIGURATION PAGE (Doit être en premier)
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")

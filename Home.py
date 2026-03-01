@@ -90,9 +90,6 @@ df_histo['jour'] = pd.to_datetime(df_histo['jour'])
 # DataFrame filtré sur la période
 df_periode = df_histo[df_histo['jour'] >= date_debut]
 
-# Somme totale par jour pour le graphique global
-df_total_quotidien = df_periode.groupby('jour')['capital_actuel'].sum().reset_index()
-
 # --- 3. INSIGHTS ---
 
 # CALCUL GENERAUX
@@ -110,9 +107,9 @@ total_investi = investi_bourse + abondement
 profit_pcent = (profit_euro / total_investi * 100) if total_investi > 0 else 0
 
 # Perf ETF
-df_etf = df.query("pdt_id in [1, 2]")
-perf_etf_euro = df_etf['profit_euro'].sum()
-investi_etf = df_etf['capital_investi'].sum()
+df_etf_kpi = df.query("pdt_id in [1, 2]")
+perf_etf_euro = df_etf_kpi['profit_euro'].sum()
+investi_etf = df_etf_kpi['capital_investi'].sum()
 perf_etf_pcent = (perf_etf_euro / investi_etf * 100) if investi_etf > 0 else 0
 
 # Calcul des poids
@@ -128,24 +125,24 @@ else:
     poids_etf = poids_pee = poids_livret = 0
 
 # Performance combinée (PEA + CTO)
-df_retraite = (df_periode.query("ptf_id in [1, 2]")
+df_etf_periode = (df_periode.query("ptf_id in [1, 2]")
                .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
                .sum()
                .reset_index()
                .query("capital_investi > 1")
                .sort_values('jour'))
 
-if not df_retraite.empty:
-    snap_debut, snap_fin = df_retraite.iloc[0], df_retraite.iloc[-1]
+if not df_etf_periode.empty:
+    snap_debut, snap_fin = df_etf_periode.iloc[0], df_etf_periode.iloc[-1]
 
     if duree == "Max":
-        perf_retraite_euro = snap_fin['profit_euro']
+        perf_etf_periode_euro = snap_fin['profit_euro']
     else:
-        perf_retraite_euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
+        perf_etf_periode_euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
 
-    perf_retraite_pct = (perf_retraite_euro / snap_fin['capital_investi'] * 100) if snap_fin['capital_investi'] > 0 else 0
+    perf_etf_periode_pct = (perf_etf_periode_euro / snap_fin['capital_investi'] * 100) if snap_fin['capital_investi'] > 0 else 0
 else:
-    perf_retraite_euro, perf_retraite_pct = 0, 0
+    perf_etf_periode_euro, perf_etf_periode_pct = 0, 0
 
 # Calcul par enveloppe
 portefeuilles = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
@@ -226,7 +223,7 @@ with col3:
         help="Rendement des enveloppes ETF"
     )
 
-# GRAPHIQUES
+# DONUTS
 
 # Design Commun
 def apply_style(fig):
@@ -247,9 +244,9 @@ common_layout = dict(
     )
 
 # ETF (ID 1 & 2)
-df_etf = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
-df_etf['nom_pour_legende'] = df_etf['ptf_id'].map({1: "S&P 500", 2: "Gold"})
-fig_etf = px.pie(df_etf, 
+df_etf_donut  = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
+df_etf_donut ['nom_pour_legende'] = df_etf_donut ['ptf_id'].map({1: "S&P 500", 2: "Gold"})
+fig_etf = px.pie(df_etf_donut , 
                  names='nom_pour_legende', 
                  values="capital_actuel", 
                  hole=0.68,
@@ -263,9 +260,9 @@ fig_etf.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=
 ])
 
 # PEE (ID 3 & 4)
-df_pee = df.query("ptf_id in [3, 4]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
-df_pee['nom_pour_legende'] = df_pee['ptf_id'].map({3: "STEF", 4: "CiC"})
-fig_pee = px.pie(df_pee, 
+df_pee_donuts = df.query("ptf_id in [3, 4]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
+df_pee_donuts['nom_pour_legende'] = df_pee_donuts['ptf_id'].map({3: "STEF", 4: "CiC"})
+fig_pee = px.pie(df_pee_donuts, 
                  names='nom_pour_legende', 
                  values="capital_actuel", 
                  hole=0.68,
@@ -279,9 +276,9 @@ fig_pee.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=
 ])
 
 # Livrets (ID 6)
-df_liv = df.query("pdt_id in [10, 11]").groupby('pdt_id')['capital_actuel'].sum().reset_index()
-df_liv['nom_pour_legende'] = df_liv['pdt_id'].map({10: "Livret A", 11: "LEP"})
-fig_liv = px.pie(df_liv, 
+df_liv_donuts = df.query("pdt_id in [10, 11]").groupby('pdt_id')['capital_actuel'].sum().reset_index()
+df_liv_donuts['nom_pour_legende'] = df_liv_donuts['pdt_id'].map({10: "Livret A", 11: "LEP"})
+fig_liv = px.pie(df_liv_donuts, 
                  names='nom_pour_legende', 
                  values="capital_actuel", 
                  hole=0.68,
@@ -311,8 +308,8 @@ col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.metric(
         label="Performance ETF", 
-        value=f"{perf_retraite_euro:,.0f} €".replace(",", " "),
-        delta=f"{perf_retraite_pct:.0f} %",
+        value=f"{perf_etf_periode_euro:,.0f} €".replace(",", " "),
+        delta=f"{perf_etf_periode_pct:.0f} %",
         help="Rendement des enveloppes ETF"
     )
 
@@ -403,9 +400,10 @@ colonnes_ordre = [
 if vue_12m:
     colonnes_ordre.extend(['Evo 12m (€)', 'Evo 12m (%)'])
 
+colonnes_enveloppes = set(mapping_ptf.values())
 tableau = []
 for c in colonnes_ordre:
-    if c in mapping_ptf:
+    if c in colonnes_enveloppes:
         if c in df_final.columns and df_final[c].notna().any() and df_final[c].sum() > 0:
             tableau.append(c)
     else:
@@ -444,10 +442,11 @@ st.divider()
 # --- 5. GRAPHIQUE ---
 
 # Création des DF
-df_apports['cumsum'] = df_apports['injecte'].cumsum()
-index_complet = pd.date_range(start=df_apports.index.min(), end=pd.Timestamp.today(), freq='ME')
-df_apports = df_apports.reindex(index_complet).ffill()
-df_apports_filtre = df_apports[df_apports.index >= date_depart_tableau]
+df_apports_graph = df_apports.copy()
+df_apports_graph['cumsum'] = df_apports_graph['injecte'].cumsum()
+index_complet = pd.date_range(start=df_apports_graph.index.min(), end=pd.Timestamp.today(), freq='ME')
+df_apports_graph = df_apports_graph.reindex(index_complet).ffill()
+df_apports_filtre = df_apports_graph[df_apports_graph.index >= date_depart_tableau]
 df_apports_filtre.index = df_apports_filtre.index.to_period('M').to_timestamp()
 df_apports_filtre = df_apports_filtre.iloc[1:]
 
@@ -512,4 +511,5 @@ graph.update_layout(
     separators=". "
     )
 
-st.plotly_chart(graph, use_container_width=True)
+if duree != "1 Mois":
+    st.plotly_chart(graph, use_container_width=True)

@@ -1,22 +1,20 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
+import scripts.database as db
 import time
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
 # --------------------------------------------------------------------------------------------------------------
 
-# 0. CONFIGURATION PAGE (Doit être en premier)
+# 0. CONFIGURATION PAGE
 st.set_page_config(page_title="Saisie", page_icon="✍️", layout="wide")
 
 # SQL
 # 1 Connection à la DB
-@st.cache_resource
-def get_engine():
-    creds = st.secrets["postgres"]
-    url = f"postgresql://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
-    return create_engine(url)
-
-engine = get_engine()
+engine = db.get_engine()
 
 # 2. Fonction pour charger les données (mise en cache pour la rapidité)
 @st.cache_data
