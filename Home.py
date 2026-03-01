@@ -121,9 +121,9 @@ pee_ids = [3, 4]
 livret_ids = [6]
 
 if capital > 0:
-    poids_etf = df.query("ptf_id in @etf_ids")['capital_actuel'].sum() / capital * 100
-    poids_pee = df.query("ptf_id in @pee_ids")['capital_actuel'].sum() / capital * 100
-    poids_livret = df.query("ptf_id in @livret_ids")['capital_actuel'].sum() / capital * 100
+    poids_etf = df.query("ptf_id in @etf_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
+    poids_pee = df.query("ptf_id in @pee_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
+    poids_livret = df.query("ptf_id in @livret_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
 else:
     poids_etf = poids_pee = poids_livret = 0
 
@@ -403,7 +403,16 @@ colonnes_ordre = [
 if vue_12m:
     colonnes_ordre.extend(['Evo 12m (€)', 'Evo 12m (%)'])
 
-df_final = df_final[[c for c in colonnes_ordre if c in df_final.columns and df_final[c].notna().any()]]
+tableau = []
+for c in colonnes_ordre:
+    if c in mapping_ptf:
+        if c in df_final.columns and df_final[c].notna().any() and df_final[c].sum() > 0:
+            tableau.append(c)
+    else:
+        if c in df_final.columns and df_final[c].notna().any():
+            tableau.append(c)
+
+df_final = df_final[tableau]
 df_final = df_final.iloc[1:].sort_index(ascending=False)
 
 df_final.index.name = 'Mois'
@@ -436,6 +445,8 @@ st.divider()
 
 # Création des DF
 df_apports['cumsum'] = df_apports['injecte'].cumsum()
+index_complet = pd.date_range(start=df_apports.index.min(), end=pd.Timestamp.today(), freq='ME')
+df_apports = df_apports.reindex(index_complet).ffill()
 df_apports_filtre = df_apports[df_apports.index >= date_depart_tableau]
 df_apports_filtre.index = df_apports_filtre.index.to_period('M').to_timestamp()
 df_apports_filtre = df_apports_filtre.iloc[1:]
@@ -451,10 +462,9 @@ couleurs = df_capital_graph['perf_graph'].apply(lambda x: '#ff4b4b' if x < 0 els
 # Dessin
 graph = go.Figure()
 
-# Tu ajoutes des "traces" une par une
 graph.add_trace(go.Scatter(
-    x=df_capital_graph.index,  # ta colonne de dates
-    y=df_capital_graph['Total'],  # ta colonne de valeurs
+    x=df_capital_graph.index,  
+    y=df_capital_graph['Total'], 
     name="Capital",
     mode='lines+markers',
     marker=dict(size=4),
@@ -464,8 +474,8 @@ graph.add_trace(go.Scatter(
 ))
 
 graph.add_trace(go.Scatter(
-    x=df_apports_filtre.index,  # ta colonne de dates
-    y=df_apports_filtre['cumsum'],  # ta colonne de valeurs
+    x=df_apports_filtre.index,  
+    y=df_apports_filtre['cumsum'],  
     name="Injecté",
     mode='lines+markers',
     marker=dict(size=4),
