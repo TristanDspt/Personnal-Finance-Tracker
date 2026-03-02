@@ -208,7 +208,7 @@ with col1:
 
 with col2:
     st.metric(
-        label="Performance Totale", 
+        label="Performance Marchés", 
         value=f"{profit_pcent:.0f} %",
         delta=f"{profit_euro:,.0f} €".replace(",", " "),
         help="Rendement total par rapport au capital investi (Hors livrets d'épargne)"
@@ -443,16 +443,22 @@ st.divider()
 # Création des DF
 df_apports_graph = df_apports.copy()
 df_apports_graph['cumsum'] = df_apports_graph['injecte'].cumsum()
-index_complet = pd.date_range(start=df_apports_graph.index.min(), end=pd.Timestamp.today(), freq='ME')
+index_complet = pd.date_range(
+    start=df_apports_graph.index.min(), 
+    end=pd.Timestamp.today() + pd.offsets.MonthEnd(), 
+    freq='ME'
+)
 df_apports_graph = df_apports_graph.reindex(index_complet).ffill()
-df_apports_filtre = df_apports_graph[df_apports_graph.index >= date_depart_tableau]
-df_apports_filtre.index = df_apports_filtre.index.to_period('M').to_timestamp()
-df_apports_filtre = df_apports_filtre.iloc[1:]
+df_apports_graph_filtre = df_apports_graph[df_apports_graph.index >= date_depart_tableau]
+df_apports_graph_filtre.index = df_apports_graph_filtre.index.to_period('M').to_timestamp()
+df_apports_graph_filtre = df_apports_graph_filtre.iloc[1:]
 
 df_capital_graph = df_final_graph.copy()
 df_capital_graph['perf_graph'] = (df_capital_graph['Perf Marchés (€)'] / df_capital_graph['Total'].shift(1)) * 100
 df_capital_graph.index = df_capital_graph.index.to_period('M').to_timestamp()
 df_capital_graph = df_capital_graph.iloc[1:]
+
+df_capital_graph['delta'] = df_capital_graph['Total'] - df_apports_graph_filtre['cumsum']
 
 # Params
 couleurs = df_capital_graph['perf_graph'].apply(lambda x: '#ff4b4b' if x < 0 else '#09ab3b')
@@ -468,18 +474,19 @@ graph.add_trace(go.Scatter(
     marker=dict(size=4),
     yaxis="y2",
     line=dict(color='#FFD700'),
-    hovertemplate="%{y:,.0f} €"
+    customdata=df_capital_graph['delta'],
+    hovertemplate="%{y:,.0f} €<br>Delta: %{customdata:,.0f} €"
 ))
 
 graph.add_trace(go.Scatter(
-    x=df_apports_filtre.index,  
-    y=df_apports_filtre['cumsum'],  
+    x=df_apports_graph_filtre.index,  
+    y=df_apports_graph_filtre['cumsum'],  
     name="Injecté",
     mode='lines+markers',
     marker=dict(size=4),
     yaxis="y2",
     line=dict(color='#4DA6FF'),
-    hovertemplate="%{y:,.0f} €"
+    hovertemplate="%{y:,.0f} €",
 ))
 
 graph.add_trace(go.Bar(
@@ -492,8 +499,8 @@ graph.add_trace(go.Bar(
 ))
 
 # Habillage
-y_min = min(df_capital_graph['Total'].min(), df_apports_filtre['cumsum'].min()) * 0.95
-y_max = max(df_capital_graph['Total'].max(), df_apports_filtre['cumsum'].max()) * 1.05
+y_min = min(df_capital_graph['Total'].min(), df_apports_graph_filtre['cumsum'].min()) * 0.95
+y_max = max(df_capital_graph['Total'].max(), df_apports_graph_filtre['cumsum'].max()) * 1.05
 
 graph.update_layout(
     yaxis=dict(title="Perf %", showgrid=False),
