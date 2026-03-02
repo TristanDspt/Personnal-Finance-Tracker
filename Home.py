@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 import plotly.express as px
 import plotly.graph_objects as go
 
-
 # -----------------------------------------------------------------------------------------------------------------
 
 # CONFIG TECHNIQUE
@@ -53,7 +52,7 @@ with st.sidebar:
     st.write(f"**CTO :** `{cash_cto:,.2f} €`".replace(',', ' '))
 
     if cash_pea > 400:
-        st.warning(f"⚠️ {cash_pea:,.2f}€ dorment sur le PEA !".replace(',', ' '))
+        st.warning(f"⚠️ {cash_pea:,.2f}€ sur le PEA !".replace(',', ' '))
 
     st.divider()
 
@@ -63,7 +62,7 @@ with st.sidebar:
         options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
         value= "6 Mois"
     )
-    vue_12m = st.toggle("Afficher les 12 mois roulants", value=False)
+    vue_12m = st.toggle("12 mois roulants", value=False)
 
 # --- 2. LOGIQUE TEMPORELLE ---
 
@@ -488,7 +487,7 @@ graph.add_trace(go.Bar(
     y=df_capital_graph['perf_graph'],
     name="Perf Marchés",
     marker=dict(color=couleurs, opacity=0.8),
-    width=1000*3600*24*5,
+    width=1000*3600*24*3,
     hovertemplate="%{y:,.2f} %"
 ))
 
