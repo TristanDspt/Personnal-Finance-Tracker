@@ -31,6 +31,9 @@ WHERE
     -- Versements PEE : APPORT volontaire + ABONDEMENT employeur
     -- ⚠️ Les mouvements PEE doivent être saisis en APPORT (pas ACHAT)
     (pdt_cash = FALSE AND mvt_type_mouvement IN ('APPORT', 'ABONDEMENT'))
+    -- Type Vente : L'argent sort de la bourse pour aller dans ma poche
+   	-- La perf marché ne doit pas etre impacté par un vente
+    OR (pdt_cash = FALSE AND mvt_type_mouvement IN ('VENTE'))
 
 GROUP BY DATE_TRUNC('month', mvt_date)
 ORDER BY mois;
