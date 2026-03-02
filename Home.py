@@ -284,7 +284,7 @@ fig_liv = px.pie(df_liv_donuts,
                  color="pdt_id",
                  color_discrete_map={10: "#FF8C00", 11: "#540A88"})
 apply_style(fig_liv)
-fig_liv.update_traces(rotation=90)
+fig_liv.update_traces(rotation=0)
 fig_liv.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=[
     dict(text="Poids Livrets", x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
     dict(text=f"<b>{poids_livret:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35))

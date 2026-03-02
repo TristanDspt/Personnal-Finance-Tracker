@@ -16,4 +16,4 @@ st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.markdown("<h1 style='text-align: center;'>📊 Dashboards</h2>", unsafe_allow_html=True)
 st.divider() # Un petit trait pour séparer proprement
 
-choix_global = st.sidebar.radio("Enveloppe", ["PEA", "CTO", "STEF", "CIC"])
+choix_global = st.sidebar.radio("Enveloppe", ["ETF", "PEA", "CTO", "STEF", "CiC", "Livrets"])
