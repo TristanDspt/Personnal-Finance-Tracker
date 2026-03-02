@@ -18,7 +18,7 @@
 ### 🔐 3. Sécurité & Cloud
 - ~~Choix de la techno BDD (PostgreSQL)~~ ✅
 - ~~Gestion des Secrets (st.secrets & config.py non publics)~~ ✅
-- **Migration Cloud** : Passer de l'instance PostgreSQL locale à une instance hébergée (Supabase/Neon). ⏳
+- **Migration Cloud** : Passer de l'instance PostgreSQL locale à une instance hébergée (Supabase). ⏳
 - **Authentification** : Ajouter un login pour sécuriser l'accès en ligne. ⏳
 - **Login et MDP** : Ajouter une page de connection ⏳
 

@@ -68,7 +68,7 @@ Les versements PEE doivent être saisis en `APPORT` (pas `ACHAT`) pour être cor
 3. Installer les dépendances : `pip install -r requirements.txt`.
 4. Configurer le fichier `.streamlit/secrets.toml` avec les accès PostgreSQL.
 5. Configurer le fichier `config.py` avec les accès PostgreSQL.
-6. Lancer l'application : `streamlit run home.py`.
+6. Lancer l'application : `streamlit run Home.py`.
 
 ## 🔒 Sécurité & Configuration
 Le projet utilise un fichier `.gitignore` pour protéger les données sensibles. 
