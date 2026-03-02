@@ -433,6 +433,7 @@ st.dataframe(
     df_final.style.format(format_filtre, na_rep='-', thousands=" ")
     .applymap(lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b', 
               subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'] if c in df_final.columns]), 
+    column_config={"Mois": st.column_config.Column(width=140)},
     use_container_width=True, height=min(35 * len(df_final) + 38, 458)
 )
 
