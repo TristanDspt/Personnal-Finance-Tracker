@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 
 # 1. Configuration de la page
 st.set_page_config(
-    page_title="Home",
+    page_title="PFT",
     page_icon="🏠",
     layout="wide"
 )
@@ -59,7 +59,7 @@ with st.sidebar:
     st.subheader("🛠️ Configuration")
     duree = st.select_slider(
         "Période d'analyse", 
-        options=["1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
+        options=["Début Mois", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
         value= "6 Mois"
     )
     vue_12m = st.toggle("12 mois roulants", value=False)
@@ -76,11 +76,17 @@ mapping_duree = {
     "5 Ans": 60, 
     "Max": 600
 }
-nb_mois = mapping_duree[duree]
+if duree in mapping_duree:
+    nb_mois = mapping_duree[duree]
+else:
+    nb_mois = 0
 
 # 2. Définition de la date pivot
-# date_debut = pd.Timestamp.now() - pd.Timedelta(days=jours)
-date_debut = pd.Timestamp.now() - pd.DateOffset(months=nb_mois)
+debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+if duree in mapping_duree:
+    date_debut = pd.Timestamp.now() - pd.DateOffset(months=nb_mois)
+else:
+    date_debut = debut_mois_actuel
 
 # 3. Création des DataFrames filtrés
 # On convertit en datetime si ce n'est pas fait à l'import
@@ -132,7 +138,17 @@ df_etf_periode = (df_periode.query("ptf_id in [1, 2]")
                .sort_values('jour'))
 
 if not df_etf_periode.empty:
-    snap_debut, snap_fin = df_etf_periode.iloc[0], df_etf_periode.iloc[-1]
+    snap_fin = df_etf_periode.iloc[-1]
+    if duree == "Début Mois":
+        snap_debut = (df_histo.query("ptf_id in [1, 2] and jour < @debut_mois_actuel")
+                  .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+                  .sum()
+                  .reset_index()
+                  .query("capital_investi > 1")
+                  .sort_values('jour')
+                  .iloc[-1])
+    else:
+        snap_debut = df_etf_periode.iloc[0]
 
     if duree == "Max":
         perf_etf_periode_euro = snap_fin['profit_euro']
@@ -156,7 +172,17 @@ for ptf_id, ptf_nom in portefeuilles.items():
                .sort_values('jour'))
 
     if not df_temp.empty:
-        snap_debut, snap_fin = df_temp.iloc[0], df_temp.iloc[-1]
+        snap_fin = df_temp.iloc[-1]
+        if duree == "Début Mois":
+            snap_debut = (df_histo.query("ptf_id == @ptf_id and jour < @debut_mois_actuel")
+                  .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                  .sum()
+                  .reset_index()
+                  .query("capital_investi + abondement_recu > 1")
+                  .sort_values('jour')
+                  .iloc[-1])
+        else:
+            snap_debut = df_temp.iloc[0]
 
         if duree == "Max":
             profit_local = snap_fin['profit_euro']
@@ -284,7 +310,7 @@ fig_liv = px.pie(df_liv_donuts,
                  color="pdt_id",
                  color_discrete_map={10: "#FF8C00", 11: "#540A88"})
 apply_style(fig_liv)
-fig_liv.update_traces(rotation=0)
+fig_liv.update_traces(rotation=10)
 fig_liv.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=[
     dict(text="Poids Livrets", x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
     dict(text=f"<b>{poids_livret:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35))
@@ -347,7 +373,6 @@ with col5:
 # LE TABLEAU
 
 # Mapping calendaire
-debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 date_depart_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
 # Mapping par PTF_ID
@@ -410,7 +435,11 @@ for c in colonnes_ordre:
             tableau.append(c)
 
 df_final = df_final[tableau]
-df_final = df_final.iloc[1:].sort_index(ascending=False)
+
+if duree in mapping_duree:
+    df_final = df_final.iloc[1:].sort_index(ascending=False)
+else:
+    df_final = df_final.sort_index(ascending=False)
 
 df_final.index.name = 'Mois'
 
@@ -518,5 +547,5 @@ graph.update_layout(
     separators=". "
     )
 
-if duree != "1 Mois":
+if duree not in ("1 Mois", "Début Mois"):
     st.plotly_chart(graph, use_container_width=True)
