@@ -24,7 +24,7 @@
 
 ### 💡 4. Autres idées à venir
 - **Compartif des placements** : Pour mettre dos à dos les perfs ? ⏳
-- **Page Bourse** : Page dédiée uniquement aux perf des produits boursier, nécéssite refonte complete de la home page. ⏳
+- **Page Bourse** : Page dédiée uniquement aux perf des produits boursier, nécéssite refonte graphique complete de la home page. (evolution de la perf marchés ?) ⏳
 - **Historique des cours** : 📈 Pour chaque placements actif. (full groupé ou radio ?) ⏳
 - **Projection à 10 ans** (intérêts composés basés sur la perf réelle). ⏳
 - **Export PDF/CSV** pour backup. ⏳
