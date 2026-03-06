@@ -8,8 +8,6 @@ import os
 url = f"postgresql://{config.db_params['user']}:{config.db_params['password']}@{config.db_params['host']}:{config.db_params['port']}/{config.db_params['database']}"
 engine = create_engine(url)
 
-print("\nConnexion établie !")
-
 # 2. Parametres de nettoyage des fichiers
 # On définit les modèles (templates)
 params_stef = {
@@ -39,19 +37,19 @@ config_auto = {
         "params": params_stef,
     },
     4: {
-        "nom": "CiC Obligation : FCPE 1525",
+        "nom": "CiC Obligation",
         "keyword": "FCPE 1525",
         "type": "excel",
         "params": params_cic,
     },
     5: {
-        "nom": "CiC Equilibre : FCPE 1630",
+        "nom": "CiC Equilibre",
         "keyword": "FCPE 1630",
         "type": "excel",
         "params": params_cic,
     },
     6: {
-        "nom": "CiC Stratégie : FCPE 4604",
+        "nom": "CiC Stratégie",
         "keyword": "FCPE 4604",
         "type": "excel",
         "params": params_cic,
@@ -82,7 +80,7 @@ for pdt_id, param in config_auto.items():
 
         df["pdt_id"] = pdt_id  # On ajoute l'ID pour que la base sache de quel livret on parle
     else:
-        print(f"⚠️ Fichier {param['nom']} non trouvé dans le dossier.")
+        print(f"Fichier {param['nom']} non trouvé dans le dossier.")
         continue  # On passe au produit suivant si pas de fichier
 
     # --- ETAPE C : COMPARAISON ET ENVOI ---
@@ -103,6 +101,6 @@ for pdt_id, param in config_auto.items():
             # On n'envoie que si le filtre n'est pas vide
             if not df_neuf.empty:
                 df_neuf.to_sql("cotation_cot", engine, if_exists="append", index=False)
-                print(f"✅ Mis à jour : {len(df_neuf)} lignes ajoutées pour {param['nom']}")
+                print(f"Mis à jour : {len(df_neuf)} lignes ajoutées pour {param['nom']}")
         else:
-            print(f"✅ {param['nom']} est déjà à jour.")
+            print(f"{param['nom']} est déjà à jour.")

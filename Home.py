@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import subprocess
+import time
 from sqlalchemy import create_engine
 import plotly.express as px
 import plotly.graph_objects as go
@@ -63,6 +65,24 @@ with st.sidebar:
         value= "6 Mois"
     )
     vue_12m = st.toggle("12 mois roulants", value=False)
+
+    st.divider()
+
+    if st.button("🔄 MAJ PEE"):
+        result = subprocess.run([st.secrets["venv_python"], r"scripts\update_pee.py"], capture_output=True, text=True)
+        st.cache_data.clear()
+        if result.stderr:
+            st.error("⚠️ Erreur !")
+            st.text(result.stderr)
+        elif "non trouvé" in result.stdout:
+            st.warning("⚠️ Fichiers absents...")
+            st.text(result.stdout)
+        else:
+            st.success("🚀 Données envoyées !")
+            st.text(result.stdout)
+        time.sleep(8)
+        st.rerun()
+    st.caption("Telecharger les fichiers CSV avant mise à jour.")
 
 # --- 2. LOGIQUE TEMPORELLE ---
 
