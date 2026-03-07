@@ -121,7 +121,7 @@ df_periode = df_histo[df_histo['jour'] >= date_debut]
 # Capital
 capital = df['capital_actuel'].sum()
 
-# Profit total en euros (hors cash)
+# Profit bourse en euros (hors cash)
 df_bourse = df.query("pdt_cash == False")
 profit_euro = df_bourse['profit_euro'].sum() 
 
