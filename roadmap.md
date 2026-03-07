@@ -20,7 +20,8 @@
 - ~~Gestion des Secrets (st.secrets & config.py non publics)~~ ✅
 - **Migration Cloud** : Passer de l'instance PostgreSQL locale à une instance hébergée (Supabase). ⏳
 - **Authentification** : Ajouter un login pour sécuriser l'accès en ligne. ⏳
-- **Login et MDP** : Ajouter une page de connection ⏳
+- **Login et MDP** : Ajouter une page de connection. ⏳
+- **BDD Fake** : Ajoute de fake data à des fins de présentation. ⏳
 
 ### 💡 4. Autres idées à venir
 - **Compartif des placements** : Pour mettre dos à dos les perfs ? ⏳
