@@ -28,7 +28,7 @@ scripts/database.py   ← connexion + chargement des vues
 | :--- | :--- |
 | `scripts/database.py` | Connexion PostgreSQL + chargement des vues SQL en DataFrame |
 | `scripts/st_logic.py` | Toute la logique métier (calculs, transformations) — zéro Streamlit |
-| `scripts/st_charts.py` | Toutes les figures Plotly (Home + Dashboards) — à venir |
+| `scripts/st_charts.py` | Toutes les figures Plotly (Home + Dashboards) |
 | `Home.py` | Page principale : appels des fonctions + affichage Streamlit |
 | `pages/1_📊_Dashboards.py` | Dashboards par enveloppe — à venir |
 | `pages/2_✍️_Saisie.py` | Formulaire de saisie des mouvements |
@@ -72,7 +72,19 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_tableau_mensuel(df_histo, df_apports, duree)` | df_histo, df_apports, str | `DataFrame` |
 | `get_donnees_graph(df_tableau, df_apports, duree)` | df_tableau, df_apports, str | `tuple (df_apports_graph, df_capital_graph)` |
 
-### Ordre d'appel dans Home.py
+---
+
+## st_charts.py — Fonctions
+
+| Fonction | Entrée | Sortie |
+| :--- | :--- | :--- |
+| `apply_style(fig)` | `go.Figure` | `None` (modifie en place) |
+| `make_donuts(df, names, values, color_discrete_map, rotation, labels, poids)` | DataFrame + params visuels | `go.Figure` |
+| `make_graph_global(df_apports_graph, df_capital_graph)` | 2 DataFrames | `go.Figure` |
+
+---
+
+## Ordre d'appel dans Home.py
 ```python
 # 1. Chargement des vues
 df, df_histo, df_apports = ...
@@ -97,6 +109,12 @@ df_tableau     = get_tableau_mensuel(df_histo, df_apports, duree)
 
 # 6. Données graph (dépend de df_tableau)
 df_ap_graph, df_cap_graph = get_donnees_graph(df_tableau, df_apports, duree)
+
+# 7. Figures
+fig_etf        = make_donuts(...)
+fig_pee        = make_donuts(...)
+fig_liv        = make_donuts(...)
+fig_global     = make_graph_global(df_ap_graph, df_cap_graph)
 ```
 
 ---
@@ -119,6 +137,7 @@ df_ap_graph, df_cap_graph = get_donnees_graph(df_tableau, df_apports, duree)
 | Préfixe | Usage |
 | :--- | :--- |
 | `get_` | Fonction qui calcule et retourne une valeur |
+| `make_` | Fonction qui crée et retourne une figure Plotly |
 | `df_` | DataFrame pandas |
 | `fig_` | Figure Plotly (dans st_charts.py) |
 | `pdt_` | Colonne liée à un produit financier (convention DB) |
