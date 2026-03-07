@@ -1,0 +1,441 @@
+import pandas as pd
+
+# =============================================================================
+# st_logic.py
+# Contient toute la logique métier de l'application (calculs, transformations).
+# Aucun code Streamlit ici — uniquement des fonctions Python pures.
+# =============================================================================
+
+
+# --- 1. CALCULS GENERAUX ---
+# Fonctions de synthèse globale, indépendantes de la période sélectionnée.
+# Toutes basées sur df (view_global_portefeuille).
+
+def get_patrimoine_total(df):
+    """
+    Calcule la valeur totale du patrimoine (cash + titres).
+
+    Args:
+        df (DataFrame): view_global_portefeuille
+
+    Returns:
+        float: somme de capital_actuel sur tous les produits
+    """
+    capital = df['capital_actuel'].sum()
+    return capital
+
+
+def get_perf_marches(df):
+    """
+    Calcule la performance globale des marchés (hors produits cash).
+    Inclut l'abondement dans la base de calcul du pourcentage.
+
+    Args:
+        df (DataFrame): view_global_portefeuille
+
+    Returns:
+        dict: {"euro": float, "pct": float}
+    """
+    # On exclut le cash (livrets, poches broker) — ils ne font pas de perf boursière
+    df_bourse = df.query("pdt_cash == False")
+    profit_euro = df_bourse['profit_euro'].sum()
+
+    # Base de calcul : effort perso + abondement employeur
+    investi_bourse = df_bourse['capital_investi'].sum()
+    abondement = df_bourse['abondement_recu'].sum()
+    total_investi = investi_bourse + abondement
+
+    # Garde-fou pour éviter une division par zéro
+    profit_pct = (profit_euro / total_investi * 100) if total_investi > 0 else 0
+
+    return {"euro": profit_euro, "pct": profit_pct}
+
+
+def get_perf_etf(df):
+    """
+    Calcule la performance des ETF (pdt_id 1 et 2 : S&P500 + Gold).
+
+    Args:
+        df (DataFrame): view_global_portefeuille
+
+    Returns:
+        dict: {"euro": float, "pct": float}
+    """
+    # Filtre sur les deux ETF uniquement
+    df_etf_kpi = df.query("pdt_id in [1, 2]")
+    perf_etf_euro = df_etf_kpi['profit_euro'].sum()
+    investi_etf = df_etf_kpi['capital_investi'].sum()
+
+    perf_etf_pct = (perf_etf_euro / investi_etf * 100) if investi_etf > 0 else 0
+
+    return {"euro": perf_etf_euro, "pct": perf_etf_pct}
+
+
+def get_poids_enveloppes(df):
+    """
+    Calcule le poids de chaque enveloppe dans le patrimoine total (en %).
+
+    Args:
+        df (DataFrame): view_global_portefeuille
+
+    Returns:
+        dict: {"etf": float, "pee": float, "livret": float}
+    """
+    # IDs des portefeuilles par catégorie
+    etf_ids = [1, 2]
+    pee_ids = [3, 4]
+    livret_ids = [6]
+
+    # Appel de la fonction dédiée pour éviter de recalculer le capital
+    capital = get_patrimoine_total(df)
+
+    if capital > 0:
+        # Poids = capital de l'enveloppe / capital total * 100
+        poids_etf = df.query("ptf_id in @etf_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
+        poids_pee = df.query("ptf_id in @pee_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
+        poids_livret = df.query("ptf_id in @livret_ids and pdt_est_actif == True")['capital_actuel'].sum() / capital * 100
+    else:
+        # Sécurité si le patrimoine est vide (DB vide, premier lancement)
+        poids_etf = poids_pee = poids_livret = 0
+
+    return {"etf": poids_etf, "pee": poids_pee, "livret": poids_livret}
+
+
+# --- 2. LOGIQUE TEMPORELLE ---
+# Fonctions liées au slider de période et aux calculs de performance sur une période donnée.
+
+def get_nb_mois(duree):
+    """
+    Convertit le label du slider en nombre de mois.
+    Retourne 0 pour le cas "Début Mois" (non présent dans le mapping).
+
+    Args:
+        duree (str): valeur du slider (ex: "6 Mois", "1 An", "Max", "Début Mois")
+
+    Returns:
+        int: nombre de mois correspondant, 0 si cas spécial
+    """
+    mapping_duree = {
+        "1 Mois": 1,
+        "3 Mois": 3,
+        "6 Mois": 6,
+        "1 An": 12,
+        "3 Ans": 36,
+        "5 Ans": 60,
+        "Max": 600
+    }
+
+    # "Début Mois" n'est pas dans le mapping → retourne 0
+    if duree in mapping_duree:
+        nb_mois = mapping_duree[duree]
+    else:
+        nb_mois = 0
+
+    return nb_mois
+
+
+def get_date_debut(duree):
+    """
+    Calcule la date de début de la période sélectionnée via le slider.
+    Cas "Début Mois" : retourne le 1er du mois en cours.
+    Autres cas : retourne aujourd'hui - nb_mois.
+
+    Args:
+        duree (str): valeur du slider
+
+    Returns:
+        pd.Timestamp: date de début de la période
+    """
+    nb_mois = get_nb_mois(duree)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+
+    if nb_mois > 0:
+        # Cas normal : on recule de nb_mois à partir d'aujourd'hui
+        date_debut = pd.Timestamp.now() - pd.DateOffset(months=nb_mois)
+    else:
+        # Cas "Début Mois" : on repart du 1er du mois en cours
+        date_debut = debut_mois_actuel
+
+    return date_debut
+
+
+def get_df_periode(df_histo, date_debut):
+    """
+    Filtre df_histo sur la période sélectionnée.
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille
+        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
+
+    Returns:
+        DataFrame: df_histo filtré >= date_debut
+    """
+    # Conversion sécurisée en datetime (au cas où l'import SQL ne l'a pas fait)
+    df_histo['jour'] = pd.to_datetime(df_histo['jour'])
+    df_periode = df_histo[df_histo['jour'] >= date_debut]
+    return df_periode
+
+
+def get_perf_etf_periode(df_histo, df_periode, duree):
+    """
+    Calcule la performance des ETF (PEA + CTO) sur la période sélectionnée.
+    Gère les cas spéciaux "Début Mois" et "Max".
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
+        df_periode (DataFrame): df_histo filtré sur la période
+        duree (str): valeur du slider
+
+    Returns:
+        dict: {"euro": float, "pct": float}
+    """
+    # Utilisé pour le cas "Début Mois" : on cherche le snapshot avant le 1er du mois
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+
+    # Agrégation journalière des deux ETF sur la période
+    df_etf_periode = (df_periode.query("ptf_id in [1, 2]")
+                      .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+                      .sum()
+                      .reset_index()
+                      .query("capital_investi > 1")  # filtre les jours sans position réelle
+                      .sort_values('jour'))
+
+    if not df_etf_periode.empty:
+        snap_fin = df_etf_periode.iloc[-1]  # dernier jour de la période
+
+        if duree == "Début Mois":
+            # On cherche le dernier snapshot AVANT le 1er du mois dans l'historique complet
+            snap_debut = (df_histo.query("ptf_id in [1, 2] and jour < @debut_mois_actuel")
+                          .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+                          .sum()
+                          .reset_index()
+                          .query("capital_investi > 1")
+                          .sort_values('jour')
+                          .iloc[-1])
+        else:
+            snap_debut = df_etf_periode.iloc[0]  # premier jour de la période filtrée
+
+        if duree == "Max":
+            # Sur "Max", le profit de début est 0 par définition
+            perf_etf_periode_euro = snap_fin['profit_euro']
+        else:
+            # Variation de profit entre début et fin de période
+            perf_etf_periode_euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
+
+        perf_etf_periode_pct = (perf_etf_periode_euro / snap_fin['capital_investi'] * 100) if snap_fin['capital_investi'] > 0 else 0
+    else:
+        # Pas de données sur la période
+        perf_etf_periode_euro, perf_etf_periode_pct = 0, 0
+
+    return {"euro": perf_etf_periode_euro, "pct": perf_etf_periode_pct}
+
+
+def get_perf_ptf_periode(df_histo, df_periode, duree):
+    """
+    Calcule la performance de chaque portefeuille sur la période sélectionnée.
+    Gère les cas spéciaux "Début Mois" et "Max".
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
+        df_periode (DataFrame): df_histo filtré sur la période
+        duree (str): valeur du slider
+
+    Returns:
+        dict: {"PEA": {"prof": float, "pct": float}, "CTO": {...}, ...}
+    """
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+
+    # Mapping ptf_id → nom affiché
+    portefeuilles = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
+    perf = {}
+
+    for ptf_id, ptf_nom in portefeuilles.items():
+        # Agrégation journalière pour ce portefeuille sur la période
+        df_temp = (df_periode.query("ptf_id == @ptf_id")
+                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                   .sum()
+                   .reset_index()
+                   .query("capital_investi + abondement_recu > 1")
+                   .sort_values('jour'))
+
+        if not df_temp.empty:
+            snap_fin = df_temp.iloc[-1]
+
+            if duree == "Début Mois":
+                # Snapshot avant le 1er du mois dans l'historique complet
+                snap_debut = (df_histo.query("ptf_id == @ptf_id and jour < @debut_mois_actuel")
+                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                              .sum()
+                              .reset_index()
+                              .query("capital_investi + abondement_recu > 1")
+                              .sort_values('jour')
+                              .iloc[-1])
+            else:
+                snap_debut = df_temp.iloc[0]
+
+            if duree == "Max":
+                euro = snap_fin['profit_euro']
+            else:
+                euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
+
+            # Base = effort perso + abondement pour un calcul de ROI correct
+            base = snap_fin['capital_investi'] + snap_fin['abondement_recu']
+            pct = (euro / base * 100) if base > 0 else 0
+        else:
+            euro, pct = 0, 0
+
+        perf[ptf_nom] = {"prof": euro, "pct": pct}
+
+    return perf
+
+
+def get_tableau_mensuel(df_histo, df_apports, duree):
+    """
+    Construit le tableau mensuel du journal de bord.
+    Calcule les colonnes de performance et nettoie le DataFrame pour l'affichage.
+    La traduction des mois en français et le formatage sont laissés à Home.py.
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille
+        df_apports (DataFrame): view_apports_mensuels
+        duree (str): valeur du slider
+
+    Returns:
+        DataFrame: tableau mensuel avec index datetime (à formater dans Home.py)
+    """
+    nb_mois = get_nb_mois(duree)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    # Date de départ du tableau (différente de date_debut qui sert au filtre df_histo)
+    date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
+
+    # Mapping ptf_id → enveloppe pour regrouper les lignes
+    mapping_ptf = {
+        1: "ETF",
+        2: "ETF",
+        3: "STEF",
+        4: "CiC",
+        6: "Livrets",
+    }
+
+    # Copies pour ne pas modifier les DataFrames originaux
+    df_mensuel = df_histo.copy()
+    df_apports = df_apports.copy()
+
+    # Ajout de la colonne enveloppe pour le regroupement
+    df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping_ptf)
+
+    # Agrégation journalière par enveloppe
+    df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
+                     .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
+                     .reset_index())
+
+    # Pivot mensuel : dernière valeur du mois par enveloppe
+    df_pivot = (df_journalier.groupby(['Enveloppe', pd.Grouper(key='jour', freq='ME')])
+                .agg({'capital_actuel': 'last', 'capital_investi': 'last'})
+                .unstack(level=0))
+
+    df_tableau = df_pivot['capital_actuel'].copy()
+
+    # --- Calcul des colonnes de performance ---
+    df_tableau['Total'] = df_tableau.sum(axis=1)
+    df_tableau['Evo Patrimoine'] = df_tableau['Total'].diff()
+    df_tableau['Evo (%)'] = (df_tableau['Evo Patrimoine'] / df_tableau['Total'].shift(1)) * 100
+
+    # Alignement des apports sur l'index mensuel du tableau
+    df_apports['mois'] = df_apports['mois'].apply(lambda x: pd.Timestamp(x).replace(tzinfo=None).normalize())
+    df_apports = df_apports.set_index('mois')
+    injecte_mois = df_apports['injecte'].reindex(df_tableau.index, fill_value=0)
+
+    # Perf marchés = variation patrimoine - argent injecté ce mois
+    df_tableau['Perf Marchés (€)'] = df_tableau['Evo Patrimoine'] - injecte_mois
+
+    # Colonnes glissantes sur 12 mois
+    df_tableau['Evo 12m (€)'] = df_tableau['Total'] - df_tableau['Total'].shift(12)
+    df_tableau['Evo 12m (%)'] = (df_tableau['Evo 12m (€)'] / df_tableau['Total'].shift(12)) * 100
+
+    # --- Nettoyage ---
+    # Filtre sur la période sélectionnée
+    df_tableau = df_tableau.query("index >= @date_debut_tableau")
+
+    # Ordre d'affichage des colonnes (les colonnes 12m sont gérées dans Home.py via vue_12m)
+    colonnes_ordre = [
+        'ETF', 'STEF', 'CiC', 'Livrets', 'Total',
+        'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'
+    ]
+
+    # On n'affiche une enveloppe que si elle a des données non nulles
+    colonnes_enveloppes = set(mapping_ptf.values())
+    tableau = []
+    for c in colonnes_ordre:
+        if c in colonnes_enveloppes:
+            if c in df_tableau.columns and df_tableau[c].notna().any() and df_tableau[c].sum() > 0:
+                tableau.append(c)
+        else:
+            if c in df_tableau.columns and df_tableau[c].notna().any():
+                tableau.append(c)
+
+    df_tableau = df_tableau[tableau]
+
+    # Tri anti-chronologique + suppression de la première ligne (diff() produit un NaN)
+    if nb_mois > 0:
+        df_tableau = df_tableau.iloc[1:].sort_index(ascending=False)
+    else:
+        df_tableau = df_tableau.sort_index(ascending=False)
+
+    df_tableau.index.name = 'Mois'
+
+    return df_tableau
+
+
+def get_donnees_graph(df_tableau, df_apports, duree):
+    """
+    Prépare les deux DataFrames nécessaires au graphique principal.
+    - df_apports_graph : cumul des apports, filtré et réindexé
+    - df_capital_graph : capital + perf mensuelle, aligné sur df_apports_graph
+
+    Args:
+        df_tableau (DataFrame): résultat de get_tableau_mensuel() — index datetime
+        df_apports (DataFrame): view_apports_mensuels brut (avec colonne 'mois')
+        duree (str): valeur du slider
+
+    Returns:
+        tuple: (df_apports_graph, df_capital_graph)
+    """
+    nb_mois = get_nb_mois(duree)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
+
+    # --- Préparation df_apports_graph ---
+    df_apports = df_apports.copy()
+    df_apports = df_apports.set_index('mois')  # index datetime nécessaire pour les opérations suivantes
+
+    # Cumul des apports depuis le début
+    df_apports['cumsum'] = df_apports['injecte'].cumsum()
+
+    # Remplissage des mois manquants (mois sans mouvement) par forward fill
+    index_complet = pd.date_range(
+        start=df_apports.index.min(),
+        end=pd.Timestamp.today() + pd.offsets.MonthEnd(),
+        freq='ME'
+    )
+    df_apports = df_apports.reindex(index_complet).ffill()
+
+    # Filtre sur la période et réindexation pour aligner avec df_capital_graph
+    df_apports_graph = df_apports[df_apports.index >= date_debut_tableau]
+    df_apports_graph.index = df_apports_graph.index.to_period('M').to_timestamp()
+    df_apports_graph = df_apports_graph.iloc[1:]  # supprime le premier mois (artefact du diff)
+
+    # --- Préparation df_capital_graph ---
+    df_capital_graph = df_tableau.copy()
+
+    # Perf marchés en % pour les barres du graphique
+    df_capital_graph['perf_graph'] = (df_capital_graph['Perf Marchés (€)'] / df_capital_graph['Total'].shift(1)) * 100
+
+    # Réindexation pour aligner les deux df sur le même axe temporel
+    df_capital_graph.index = df_capital_graph.index.to_period('M').to_timestamp()
+    df_capital_graph = df_capital_graph.iloc[1:]
+
+    # Delta = écart entre capital réel et argent injecté (= perf pure des marchés en €)
+    df_capital_graph['delta'] = df_capital_graph['Total'] - df_apports_graph['cumsum']
+
+    return df_apports_graph, df_capital_graph
