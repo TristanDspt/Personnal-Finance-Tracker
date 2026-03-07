@@ -83,13 +83,6 @@ Pour faire fonctionner l'application, vous devez créer :
    user = "votre_user"
    password = "votre_password"
 
-## 📈 État d'avancement
-- [x] Backend Python & Fetching API
-- [x] Modélisation de la base de données (PostgreSQL)
-- [x] Application Streamlit : Formulaires de saisie manuelle
-- [ ] Application Streamlit : Dashboard de DataViz (En cours)
-- [ ] Pages dédiées PEA / CTO / PEE(s)
-
 ## ⚙️ Configuration
 - **OS :** Windows 10/11
 - **IDE :** VS Code
