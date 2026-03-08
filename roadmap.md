@@ -3,10 +3,8 @@
 ### 🏠 1. Homepage
 - ~~integration du tableau~~ ✅
 - ~~rendre le slider de selection de période actif~~ ✅
-- **Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage) 🚨 **URGENT**
+- ~~**Refacto complète de Home.py** : diviser la partie logique (calculs) et la partie graphique (affichage)~~ ✅ 
 - ~~**Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ?~~ ✅
-- **Virements Automatiques** : création d'une ligne le 2 du mois pour le PEA et le CTO dans la DB. ⏳
-- **DCA Automatique** : création d'une ligne le 16 du mois (hors week-end -et JF ?) dans la DB. ⏳
 
 ### 📊 2. Page Dashboards
 - **dash ETF** (qui regroupe les deux ETF) ?? ⏳
@@ -28,7 +26,7 @@
 - **Page Bourse** : Page dédiée uniquement aux perf des produits boursier, nécéssite refonte graphique complete de la home page. (evolution de la perf marchés ?) ⏳
 - **Historique des cours** : 📈 Pour chaque placements actif. (full groupé ou radio ?) ⏳
 - **Projection à 10 ans** (intérêts composés basés sur la perf réelle). ⏳
-- **Export PDF/CSV** pour backup. ⏳
+- **Virements Automatiques** : création d'une ligne le 2 du mois pour le PEA et le CTO dans la DB. ⏳
 
 ### 🤖 5. Vision Futur (ML - 2027+)
 - **Prédiction de trajectoire** : Forecasting via Prophet ou ARIMA. ⏳
