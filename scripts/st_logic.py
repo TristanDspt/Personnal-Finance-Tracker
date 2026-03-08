@@ -230,7 +230,7 @@ def get_perf_etf_periode(df_histo, df_periode, duree):
     return {"euro": perf_etf_periode_euro, "pct": perf_etf_periode_pct}
 
 
-def get_perf_ptf_periode(df_histo, df_periode, duree):
+def get_perf_ptf_periode(df_histo, df_periode, duree, mapping):
     """
     Calcule la performance de chaque portefeuille sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
@@ -246,7 +246,7 @@ def get_perf_ptf_periode(df_histo, df_periode, duree):
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
     # Mapping ptf_id → nom affiché
-    portefeuilles = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
+    portefeuilles = mapping
     perf = {}
 
     for ptf_id, ptf_nom in portefeuilles.items():
@@ -289,7 +289,7 @@ def get_perf_ptf_periode(df_histo, df_periode, duree):
     return perf
 
 
-def get_tableau_mensuel(df_histo, df_apports, duree):
+def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
     """
     Construit le tableau mensuel du journal de bord.
     Retourne deux DataFrames :
@@ -310,21 +310,12 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
     # Date de départ du tableau — inclut 1 mois de buffer pour permettre le calcul des évolutions m-1
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
-    # Mapping ptf_id → enveloppe pour regrouper les lignes
-    mapping_ptf = {
-        1: "ETF",
-        2: "ETF",
-        3: "STEF",
-        4: "CiC",
-        6: "Livrets",
-    }
-
     # Copies pour ne pas modifier les DataFrames originaux
     df_mensuel = df_histo.copy()
     df_apports = df_apports.copy()
 
     # Ajout de la colonne enveloppe pour le regroupement
-    df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping_ptf)
+    df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping)
 
     # Agrégation journalière par enveloppe
     df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
@@ -361,13 +352,10 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
     df_tableau = df_tableau.query("index >= @date_debut_tableau")
 
     # Ordre d'affichage des colonnes (les colonnes 12m sont gérées dans Home.py via vue_12m)
-    colonnes_ordre = [
-        'ETF', 'STEF', 'CiC', 'Livrets', 'Total',
-        'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'
-    ]
+    colonnes_ordre = list(dict.fromkeys(mapping.values())) + ['Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)']
 
     # On n'affiche une enveloppe que si elle a des données non nulles
-    colonnes_enveloppes = set(mapping_ptf.values())
+    colonnes_enveloppes = set(mapping.values())
     tableau = []
     for c in colonnes_ordre:
         if c in colonnes_enveloppes:
