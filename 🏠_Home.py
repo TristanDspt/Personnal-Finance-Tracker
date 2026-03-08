@@ -208,25 +208,25 @@ with col1:
 with col2:
     st.metric(
         label="Performance PEA",
-        value=f"{perf_ptf['PEA']['prof']:,.0f} €".replace(",", " "),
+        value=f"{perf_ptf['PEA']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['PEA']['pct']:.0f} %"
     )
 with col3:
     st.metric(
         label="Performance CTO",
-        value=f"{perf_ptf['CTO']['prof']:,.0f} €".replace(",", " "),
+        value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['CTO']['pct']:.0f} %"
     )
 with col4:
     st.metric(
         label="Performance STEF",
-        value=f"{perf_ptf['STEF']['prof']:,.0f} €".replace(",", " "),
+        value=f"{perf_ptf['STEF']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['STEF']['pct']:.0f} %"
     )
 with col5:
     st.metric(
         label="Performance CiC",
-        value=f"{perf_ptf['CiC']['prof']:,.0f} €".replace(",", " "),
+        value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['CiC']['pct']:.0f} %"
     )
 

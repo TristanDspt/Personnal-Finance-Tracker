@@ -284,7 +284,7 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, mapping):
         else:
             euro, pct = 0, 0
 
-        perf[ptf_nom] = {"prof": euro, "pct": pct}
+        perf[ptf_nom] = {"euro": euro, "pct": pct}
 
     return perf
 
