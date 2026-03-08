@@ -123,7 +123,7 @@ fig_global     = make_graph_global(df_ap_graph, df_cap_graph)
 
 | Page | Contenu prévu |
 | :--- | :--- |
-| ETF | Performance combinée PEA + CTO, historique des cours |
+| ETF | Performance combinée PEA + CTO |
 | PEA | Détail S&P500, évolution capital/profit |
 | CTO | Détail Gold, évolution capital/profit |
 | STEF | Actions STEF, historique PEE |
