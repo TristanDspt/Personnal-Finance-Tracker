@@ -7,7 +7,8 @@
 - ~~**Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ?~~ ✅
 
 ### 📊 2. Page Dashboards
-- **dash ETF** (qui regroupe les deux ETF) ?? ⏳
+- **Idées graphiques** : Waterfall (perf / perf totale) / (capital / captital total). Hors livrets ? ⏳
+- **dash ETF** (qui regroupe les deux ETF) ? ⏳
 - **dash PEA** ⏳
 - **dash CTO** ⏳
 - **dash Stef** ⏳
