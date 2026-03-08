@@ -18,13 +18,13 @@ L'objectif est de transformer un suivi manuel fastidieux en une application auto
 | **Interface (UI)** | Streamlit | Dashboard interactif et formulaires de saisie |
 | **DataViz** | Plotly | Graphiques dynamiques et indicateurs de performance |
 | **Gestion DB** | DBeaver | Administration et requêtage SQL |
-| **Data Sources** | yfinance / CSV / Excel | Extraction des cours et historiques fonds (CIC, STEF) |
+| **Data Sources** | yfinance / CSV / Excel | Extraction des cours et historiques fonds |
 
 ## 💡 Fonctionnalités Clés
 
 ### 1. Ingestion & Automatisation (ETL)
 * **Automatique :** Script Python utilisant l'API `yfinance` pour les actifs boursiers.
-* **Semi-Automatique :** Parsing intelligent de fichiers Excel/CSV pour les fonds d'entreprise (STEF, CIC).
+* **Semi-Automatique :** Parsing intelligent de fichiers Excel/CSV pour les fonds d'entreprise (PEE).
 * **Incrémentation Logique :** Le script compare les dates en base de données pour n'importer que les nouvelles cotations (évite les doublons).
 * **Orchestration :** Automatisation via fichiers `.bat` et le **Planificateur de tâches Windows** pour une mise à jour quotidienne sans intervention.
 
