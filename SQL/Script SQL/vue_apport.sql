@@ -8,7 +8,7 @@
 CREATE OR REPLACE VIEW view_apports_mensuels AS
 SELECT
     -- Ramène toutes les dates au dernier jour du mois pour aligner avec Pandas
-    DATE_TRUNC('month', mvt_date) + INTERVAL '1 month' - INTERVAL '1 day' as mois,
+    (DATE_TRUNC('month', mvt_date) + INTERVAL '1 month' - INTERVAL '1 day')::date as mois,
     
     SUM(CASE
         -- CASH (livrets, poches broker) : mvt_nb_parts est déjà en €

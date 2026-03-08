@@ -69,8 +69,12 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_df_periode(df_histo, date_debut)` | df_histo, date | `DataFrame` |
 | `get_perf_etf_periode(df_histo, df_periode, duree)` | df_histo, df_periode, str | `dict {euro, pct}` |
 | `get_perf_ptf_periode(df_histo, df_periode, duree)` | df_histo, df_periode, str | `dict {PEA: {prof, pct}, CTO: {...}, ...}` |
-| `get_tableau_mensuel(df_histo, df_apports, duree)` | df_histo, df_apports, str | `DataFrame` |
-| `get_donnees_graph(df_tableau, df_apports, duree)` | df_tableau, df_apports, str | `tuple (df_apports_graph, df_capital_graph)` |
+| `get_tableau_mensuel(df_histo, df_apports, duree)` | df_histo, df_apports, str | `tuple (df_tableau, df_tableau_buffer)` |
+| `get_donnees_graph(df_tableau_buffer, df_apports, duree)` | df_tableau_buffer, df_apports, str | `tuple (df_apports_graph, df_capital_graph)` |
+
+> ⚠️ `get_tableau_mensuel` retourne un tuple :
+> - `df_tableau` : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
+> - `df_tableau_buffer` : version avec mois de buffer pour `get_donnees_graph` (tri croissant, 1er mois conservé)
 
 ---
 
@@ -105,10 +109,11 @@ perf_etf_p     = get_perf_etf_periode(df_histo, df_periode, duree)
 perf_ptf       = get_perf_ptf_periode(df_histo, df_periode, duree)
 
 # 5. Tableau (doit précéder le graph)
-df_tableau     = get_tableau_mensuel(df_histo, df_apports, duree)
+# Retourne un tuple — df_tableau pour l'affichage, df_tableau_buffer pour le graph
+df_tableau, df_tableau_buffer = get_tableau_mensuel(df_histo, df_apports, duree)
 
-# 6. Données graph (dépend de df_tableau)
-df_ap_graph, df_cap_graph = get_donnees_graph(df_tableau, df_apports, duree)
+# 6. Données graph (reçoit df_tableau_buffer, pas df_tableau)
+df_ap_graph, df_cap_graph = get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
 # 7. Figures
 fig_etf        = make_donuts(...)

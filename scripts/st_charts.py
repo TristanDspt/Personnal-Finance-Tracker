@@ -147,6 +147,7 @@ def make_graph_global(df_apports_graph, df_capital_graph):
     # Habillage général : double axe Y, légende horizontale en haut, hover unifié
     graph_global.update_layout(
         yaxis=dict(title="Perf %", showgrid=False),
+        xaxis=dict(tickformat="%B %Y"),
         yaxis2=dict(
             side='right',
             overlaying='y',

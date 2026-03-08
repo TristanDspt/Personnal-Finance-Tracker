@@ -292,8 +292,10 @@ def get_perf_ptf_periode(df_histo, df_periode, duree):
 def get_tableau_mensuel(df_histo, df_apports, duree):
     """
     Construit le tableau mensuel du journal de bord.
-    Calcule les colonnes de performance et nettoie le DataFrame pour l'affichage.
-    La traduction des mois en français et le formatage sont laissés à Home.py.
+    Retourne deux DataFrames :
+    - df_tableau : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
+    - df_tableau_buffer : version avec le mois de buffer nécessaire au calcul du graph
+                          (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
 
     Args:
         df_histo (DataFrame): view_historique_portefeuille
@@ -301,11 +303,11 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
         duree (str): valeur du slider
 
     Returns:
-        DataFrame: tableau mensuel avec index datetime (à formater dans Home.py)
+        tuple: (df_tableau, df_tableau_buffer)
     """
     nb_mois = get_nb_mois(duree)
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
-    # Date de départ du tableau (différente de date_debut qui sert au filtre df_histo)
+    # Date de départ du tableau — inclut 1 mois de buffer pour permettre le calcul des évolutions m-1
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
     # Mapping ptf_id → enveloppe pour regrouper les lignes
@@ -342,6 +344,7 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
     df_tableau['Evo (%)'] = (df_tableau['Evo Patrimoine'] / df_tableau['Total'].shift(1)) * 100
 
     # Alignement des apports sur l'index mensuel du tableau
+    # La vue SQL retourne des dates avec timezone → on la vire proprement avant le reindex
     df_apports['mois'] = df_apports['mois'].apply(lambda x: pd.Timestamp(x).replace(tzinfo=None).normalize())
     df_apports = df_apports.set_index('mois')
     injecte_mois = df_apports['injecte'].reindex(df_tableau.index, fill_value=0)
@@ -349,7 +352,7 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
     # Perf marchés = variation patrimoine - argent injecté ce mois
     df_tableau['Perf Marchés (€)'] = df_tableau['Evo Patrimoine'] - injecte_mois
 
-    # Colonnes glissantes sur 12 mois
+    # Colonnes glissantes sur 12 mois (activées via toggle dans Home.py)
     df_tableau['Evo 12m (€)'] = df_tableau['Total'] - df_tableau['Total'].shift(12)
     df_tableau['Evo 12m (%)'] = (df_tableau['Evo 12m (€)'] / df_tableau['Total'].shift(12)) * 100
 
@@ -376,7 +379,11 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
 
     df_tableau = df_tableau[tableau]
 
-    # Tri anti-chronologique + suppression de la première ligne (diff() produit un NaN)
+    # Buffer pour le graph : trié croissant, conserve le 1er mois
+    # (nécessaire pour que get_donnees_graph puisse calculer perf_graph via shift(1))
+    df_tableau_buffer = df_tableau.sort_index(ascending=True)
+
+    # Tableau d'affichage : tri décroissant + suppression du 1er mois (artefact du diff())
     if nb_mois > 0:
         df_tableau = df_tableau.iloc[1:].sort_index(ascending=False)
     else:
@@ -384,17 +391,20 @@ def get_tableau_mensuel(df_histo, df_apports, duree):
 
     df_tableau.index.name = 'Mois'
 
-    return df_tableau
+    return df_tableau, df_tableau_buffer
 
 
-def get_donnees_graph(df_tableau, df_apports, duree):
+def get_donnees_graph(df_tableau_buffer, df_apports, duree):
     """
     Prépare les deux DataFrames nécessaires au graphique principal.
-    - df_apports_graph : cumul des apports, filtré et réindexé
-    - df_capital_graph : capital + perf mensuelle, aligné sur df_apports_graph
+    - df_apports_graph : cumul des apports mensuels, filtré et réindexé sur la période
+    - df_capital_graph : capital mensuel + perf, avec le 1er mois viré après calculs
+
+    ⚠️ Reçoit df_tableau_buffer (avec mois de buffer) et non df_tableau (version affichage).
+    Le buffer est indispensable pour calculer perf_graph via shift(1) sans perdre le 1er mois affiché.
 
     Args:
-        df_tableau (DataFrame): résultat de get_tableau_mensuel() — index datetime
+        df_tableau_buffer (DataFrame): résultat de get_tableau_mensuel()[1] — trié croissant avec buffer
         df_apports (DataFrame): view_apports_mensuels brut (avec colonne 'mois')
         duree (str): valeur du slider
 
@@ -406,36 +416,50 @@ def get_donnees_graph(df_tableau, df_apports, duree):
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
     # --- Préparation df_apports_graph ---
-    df_apports = df_apports.copy()
-    df_apports = df_apports.set_index('mois')  # index datetime nécessaire pour les opérations suivantes
 
-    # Cumul des apports depuis le début
+    # Tri croissant pour les calculs cumulatifs
+    df_tableau_buffer = df_tableau_buffer.sort_index(ascending=True)
+
+    df_apports = df_apports.copy()
+    df_apports = df_apports.set_index('mois')
+
+    # La vue SQL retourne des dates propres (::date) — conversion simple sans timezone
+    df_apports.index = pd.to_datetime(df_apports.index)
+
+    # Cumul des apports depuis le début (toute l'histoire, pas juste la période)
     df_apports['cumsum'] = df_apports['injecte'].cumsum()
 
     # Remplissage des mois manquants (mois sans mouvement) par forward fill
+    # Nécessaire pour avoir une courbe continue même les mois sans apport
     index_complet = pd.date_range(
-        start=df_apports.index.min(),
-        end=pd.Timestamp.today() + pd.offsets.MonthEnd(),
+        start=pd.Timestamp(df_apports.index.min()).tz_localize(None),
+        end=pd.Timestamp.today() + pd.offsets.MonthEnd(0),
         freq='ME'
     )
     df_apports = df_apports.reindex(index_complet).ffill()
 
-    # Filtre sur la période et réindexation pour aligner avec df_capital_graph
+    # Filtre sur la période + réindexation en début de mois pour aligner avec df_capital_graph
     df_apports_graph = df_apports[df_apports.index >= date_debut_tableau]
     df_apports_graph.index = df_apports_graph.index.to_period('M').to_timestamp()
-    df_apports_graph = df_apports_graph.iloc[1:]  # supprime le premier mois (artefact du diff)
+
+    # Suppression du 1er mois : il sert de référence pour le diff() mais ne doit pas s'afficher
+    df_apports_graph = df_apports_graph.iloc[1:]
 
     # --- Préparation df_capital_graph ---
-    df_capital_graph = df_tableau.copy()
 
-    # Perf marchés en % pour les barres du graphique
+    df_capital_graph = df_tableau_buffer
+
+    # Perf marchés en % : variation mensuelle du patrimoine / total du mois précédent
+    # Le shift(1) utilise le mois de buffer — c'est pour ça qu'on a besoin de df_tableau_buffer
     df_capital_graph['perf_graph'] = (df_capital_graph['Perf Marchés (€)'] / df_capital_graph['Total'].shift(1)) * 100
 
-    # Réindexation pour aligner les deux df sur le même axe temporel
+    # Réindexation en début de mois pour aligner avec df_apports_graph
     df_capital_graph.index = df_capital_graph.index.to_period('M').to_timestamp()
-    df_capital_graph = df_capital_graph.iloc[1:]
 
-    # Delta = écart entre capital réel et argent injecté (= perf pure des marchés en €)
+    # Delta = écart entre capital réel et apports cumulés = performance pure des marchés en €
     df_capital_graph['delta'] = df_capital_graph['Total'] - df_apports_graph['cumsum']
+
+    # Suppression du 1er mois (buffer) — il a servi pour le shift(1), on ne l'affiche pas
+    df_capital_graph = df_capital_graph.iloc[1:]
 
     return df_apports_graph, df_capital_graph
