@@ -9,6 +9,6 @@ def get_engine():
     return create_engine(url)
 
 @st.cache_data
-def get_view(view_name, engine):
-    df = pd.read_sql(f"SELECT * FROM {view_name}", engine)
+def get_view(view_name, _engine):
+    df = pd.read_sql(f"SELECT * FROM {view_name}", _engine)
     return df
