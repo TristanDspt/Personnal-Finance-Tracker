@@ -451,3 +451,55 @@ def get_donnees_graph(df_tableau_buffer, df_apports, duree):
     df_capital_graph = df_capital_graph.iloc[1:]
 
     return df_apports_graph, df_capital_graph
+
+
+def get_injecte_periode(df_histo, df_periode, duree, liste_pdt):
+    """
+    Calcule la performance de chaque portefeuille sur la période sélectionnée.
+    Gère les cas spéciaux "Début Mois" et "Max".
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
+        df_periode (DataFrame): df_histo filtré sur la période
+        duree (str): valeur du slider
+
+    Returns:
+        dict: {"PEA": {"prof": float, "pct": float}, "CTO": {...}, ...}
+    """
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+
+    injecte = 0
+
+    for pdt_id in liste_pdt:
+        # Agrégation journalière pour ce produit sur la période
+        df_temp = (df_periode.query("pdt_id == @pdt_id")
+                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                   .sum()
+                   .reset_index()
+                   .query("capital_investi + abondement_recu > 1")
+                   .sort_values('jour'))
+
+        if not df_temp.empty:
+            snap_fin = df_temp.iloc[-1]
+
+            if duree == "Début Mois":
+                # Snapshot avant le 1er du mois dans l'historique complet
+                snap_debut = (df_histo.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
+                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                              .sum()
+                              .reset_index()
+                              .query("capital_investi + abondement_recu > 1")
+                              .sort_values('jour')
+                              .iloc[-1])
+            else:
+                snap_debut = df_temp.iloc[0]
+
+            if duree == "Max":
+                injecte += snap_fin['capital_investi']
+            else:
+                injecte += snap_fin['capital_investi'] - snap_debut['capital_investi']
+
+        else:
+            injecte += 0
+
+    return injecte

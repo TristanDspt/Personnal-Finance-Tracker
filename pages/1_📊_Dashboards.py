@@ -138,6 +138,8 @@ match choix_global:
 
         mapping_ptf = {1: "PEA"}
         perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, mapping_ptf)
+        liste_pdt = [1, 7]
+        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, liste_pdt)
 
         col6, col7, col8, col9 = st.columns(4)
 
@@ -150,7 +152,8 @@ match choix_global:
         with col7:
             st.metric(
                 label="Injecté",
-                value=f"{perf_ptf_pea['PEA']['euro']:,.0f} €".replace(",", " ")
+                value=f"{injecte:,.0f} €".replace(",", " "),
+                help="Somme des dépots sur la periode"
             )
         with col8:
             st.metric(
