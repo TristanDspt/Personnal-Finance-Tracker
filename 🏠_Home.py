@@ -95,7 +95,7 @@ with st.sidebar:
             st.text(result.stdout)
         time.sleep(8)
         st.rerun()
-    st.caption("Telecharger les fichiers CSV avant mise à jour.")
+    st.caption("Télécharger les CSV avant la maj")
 
 
 # --- 4. CALCULS GÉNÉRAUX (indépendants de la période) ---
