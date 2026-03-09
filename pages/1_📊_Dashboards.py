@@ -134,12 +134,12 @@ match choix_global:
 
         # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
         st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
-
+    
 
         mapping_ptf = {1: "PEA"}
-        perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, mapping_ptf)
+        perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         liste_pdt = [1, 7]
-        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, liste_pdt)
+        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)
 
         col6, col7, col8, col9 = st.columns(4)
 
@@ -167,3 +167,4 @@ match choix_global:
                 value=f"{perf_pea['pct']:.0f} %",
                 help="TRI : conversion de la performance en base annuelle"
             )
+        

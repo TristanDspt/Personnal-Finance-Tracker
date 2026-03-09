@@ -16,7 +16,7 @@ def get_patrimoine_total(df):
     Calcule la valeur totale du patrimoine (cash + titres).
 
     Args:
-        df (DataFrame): view_global_portefeuille
+        df (DataFrame): view_global_portefeuille (ou sous-ensemble filtré)
 
     Returns:
         float: somme de capital_actuel sur tous les produits
@@ -31,7 +31,7 @@ def get_perf_marches(df):
     Inclut l'abondement dans la base de calcul du pourcentage.
 
     Args:
-        df (DataFrame): view_global_portefeuille
+        df (DataFrame): view_global_portefeuille (ou sous-ensemble filtré)
 
     Returns:
         dict: {"euro": float, "pct": float}
@@ -138,13 +138,16 @@ def get_date_debut(duree):
     """
     Calcule la date de début de la période sélectionnée via le slider.
     Cas "Début Mois" : retourne le 1er du mois en cours.
-    Autres cas : retourne aujourd'hui - nb_mois.
+    Autres cas : retourne aujourd'hui - nb_mois, normalisé à minuit.
+
+    ⚠️ Le normalize() est essentiel pour éviter les décalages d'un jour
+    liés à l'heure exacte d'exécution lors des comparaisons avec df_histo.
 
     Args:
         duree (str): valeur du slider
 
     Returns:
-        pd.Timestamp: date de début de la période
+        pd.Timestamp: date de début de la période (minuit)
     """
     nb_mois = get_nb_mois(duree)
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
@@ -155,6 +158,9 @@ def get_date_debut(duree):
     else:
         # Cas "Début Mois" : on repart du 1er du mois en cours
         date_debut = debut_mois_actuel
+
+    # Normalisation à minuit — évite les décalages lors des comparaisons avec les dates SQL
+    date_debut = pd.Timestamp(date_debut).normalize()
 
     return date_debut
 
@@ -176,14 +182,18 @@ def get_df_periode(df_histo, date_debut):
     return df_periode
 
 
-def get_perf_etf_periode(df_histo, df_periode, duree):
+def get_perf_etf_periode(df_histo, df_periode, date_debut, duree):
     """
     Calcule la performance des ETF (PEA + CTO) sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
 
+    ⚠️ Si snap_debut['jour'] > date_debut, cela signifie que la période demandée
+    remonte avant le premier mouvement — on traite alors comme "Max" (profit total).
+
     Args:
         df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
         df_periode (DataFrame): df_histo filtré sur la période
+        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
         duree (str): valeur du slider
 
     Returns:
@@ -215,8 +225,9 @@ def get_perf_etf_periode(df_histo, df_periode, duree):
         else:
             snap_debut = df_etf_periode.iloc[0]  # premier jour de la période filtrée
 
-        if duree == "Max":
-            # Sur "Max", le profit de début est 0 par définition
+        # Si snap_debut est postérieur à date_debut → la période remonte avant le 1er mouvement
+        # On traite comme "Max" : profit total depuis le début
+        if duree == "Max" or snap_debut['jour'] > date_debut:
             perf_etf_periode_euro = snap_fin['profit_euro']
         else:
             # Variation de profit entre début et fin de période
@@ -230,22 +241,26 @@ def get_perf_etf_periode(df_histo, df_periode, duree):
     return {"euro": perf_etf_periode_euro, "pct": perf_etf_periode_pct}
 
 
-def get_perf_ptf_periode(df_histo, df_periode, duree, mapping):
+def get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping):
     """
     Calcule la performance de chaque portefeuille sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
+
+    ⚠️ Si snap_debut['jour'] > date_debut, cela signifie que la période demandée
+    remonte avant le premier mouvement — on traite alors comme "Max" (profit total).
 
     Args:
         df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
         df_periode (DataFrame): df_histo filtré sur la période
         duree (str): valeur du slider
+        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
+        mapping (dict): {ptf_id: nom_affiche} — ex: {1: "PEA", 2: "CTO"}
 
     Returns:
-        dict: {"PEA": {"prof": float, "pct": float}, "CTO": {...}, ...}
+        dict: {"PEA": {"euro": float, "pct": float}, "CTO": {...}, ...}
     """
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
-    # Mapping ptf_id → nom affiché
     portefeuilles = mapping
     perf = {}
 
@@ -273,7 +288,9 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, mapping):
             else:
                 snap_debut = df_temp.iloc[0]
 
-            if duree == "Max":
+            # Si snap_debut est postérieur à date_debut → la période remonte avant le 1er mouvement
+            # On traite comme "Max" : profit total depuis le début
+            if duree == "Max" or snap_debut['jour'] > date_debut:
                 euro = snap_fin['profit_euro']
             else:
                 euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
@@ -301,6 +318,8 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
         df_histo (DataFrame): view_historique_portefeuille
         df_apports (DataFrame): view_apports_mensuels
         duree (str): valeur du slider
+        mapping (dict): {ptf_id: nom_enveloppe} — ex: {1: "ETF", 2: "ETF", 3: "STEF"}
+                        Les valeurs identiques permettent de regrouper plusieurs ptf sous une même colonne
 
     Returns:
         tuple: (df_tableau, df_tableau_buffer)
@@ -351,7 +370,7 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
     # Filtre sur la période sélectionnée
     df_tableau = df_tableau.query("index >= @date_debut_tableau")
 
-    # Ordre d'affichage des colonnes (les colonnes 12m sont gérées dans Home.py via vue_12m)
+    # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
     colonnes_ordre = list(dict.fromkeys(mapping.values())) + ['Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)']
 
     # On n'affiche une enveloppe que si elle a des données non nulles
@@ -453,18 +472,24 @@ def get_donnees_graph(df_tableau_buffer, df_apports, duree):
     return df_apports_graph, df_capital_graph
 
 
-def get_injecte_periode(df_histo, df_periode, duree, liste_pdt):
+def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
     """
-    Calcule la performance de chaque portefeuille sur la période sélectionnée.
+    Calcule le capital total injecté sur une liste de produits sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
+
+    ⚠️ Basé sur capital_investi (cumulatif) — calcule la variation entre snap_debut et snap_fin.
+    Si snap_debut['jour'] > date_debut, la période remonte avant le 1er mouvement :
+    on traite alors comme "Max" et retourne le capital_investi total.
 
     Args:
         df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
         df_periode (DataFrame): df_histo filtré sur la période
         duree (str): valeur du slider
+        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
+        liste_pdt (list): liste des pdt_id à inclure — ex: [1, 7] pour PEA (ETF + cash)
 
     Returns:
-        dict: {"PEA": {"prof": float, "pct": float}, "CTO": {...}, ...}
+        float: somme du capital injecté sur les produits listés sur la période
     """
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
@@ -494,7 +519,9 @@ def get_injecte_periode(df_histo, df_periode, duree, liste_pdt):
             else:
                 snap_debut = df_temp.iloc[0]
 
-            if duree == "Max":
+            # Si snap_debut est postérieur à date_debut → la période remonte avant le 1er mouvement
+            # On traite comme "Max" : capital investi total depuis le début
+            if duree == "Max" or snap_debut['jour'] > date_debut:
                 injecte += snap_fin['capital_investi']
             else:
                 injecte += snap_fin['capital_investi'] - snap_debut['capital_investi']

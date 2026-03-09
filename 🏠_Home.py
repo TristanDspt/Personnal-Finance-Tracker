@@ -112,10 +112,10 @@ poids        = logic.get_poids_enveloppes(df)
 
 date_debut = logic.get_date_debut(duree)
 df_periode = logic.get_df_periode(df_histo, date_debut)
-perf_etf_p = logic.get_perf_etf_periode(df_histo, df_periode, duree)
+perf_etf_p = logic.get_perf_etf_periode(df_histo, df_periode, date_debut, duree)
 # Mapping ptf_id → nom affiché
 mapping_ptf = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
-perf_ptf   = logic.get_perf_ptf_periode(df_histo, df_periode, duree, mapping_ptf)
+perf_ptf   = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
 
 # Le tableau doit être calculé avant le graph — get_donnees_graph dépend de df_tableau_buffer
 # df_tableau_buffer : version avec mois de buffer, pour le calcul de perf_graph via shift(1)
