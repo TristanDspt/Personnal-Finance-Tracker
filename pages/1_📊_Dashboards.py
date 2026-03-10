@@ -93,6 +93,7 @@ match choix_global:
         capital_pea = logic.get_patrimoine_total(df_pea)
         perf_pea = logic.get_perf_marches(df_pea)
         cap_injecte_pea = df_pea['capital_investi'].sum()
+        capital_net = logic.get_perf_nette(df, 1)
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
         st.divider()
@@ -120,14 +121,14 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{cap_injecte_pea:.0f} €".replace(",", " "),
+                value=f"{capital_net['net']:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 17.2 %"
             )
         with col5:
             st.metric(
                 label="Performance Nette",
-                value=f"{cap_injecte_pea:.0f} €".replace(",", " "),
-                delta=f"{perf_pea['pct']:.0f} %"
+                value=f"{capital_net['euro']:.0f} €".replace(",", " "),
+                delta=f"{capital_net['pct']:.0f} %"
             )
 
         st.divider()
@@ -141,7 +142,7 @@ match choix_global:
         liste_pdt = [1, 7]
         injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)
 
-        col6, col7, col8, col9 = st.columns(4)
+        _, col6, col7, col8, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
         with col6:
             st.metric(
@@ -156,12 +157,6 @@ match choix_global:
                 help="Somme des dépots sur la periode"
             )
         with col8:
-            st.metric(
-                label="Performance Nette",
-                value=f"{cap_injecte_pea:.0f} €".replace(",", " "),
-                delta=f"{perf_pea['pct']:.0f} %"
-            )
-        with col9:
             st.metric(
                 label="Performance Annualisée",
                 value=f"{perf_pea['pct']:.0f} %",
