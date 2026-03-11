@@ -94,6 +94,7 @@ match choix_global:
         perf_pea = logic.get_perf_marches(df_pea)
         cap_injecte_pea = df_pea['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 1)
+        tri = logic.get_tri(df, engine, [1])
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
         st.divider()
@@ -108,28 +109,30 @@ match choix_global:
             )
 
         with col2:
+
+            st.metric(
+                label="Capital injecté",
+                value=f"{cap_injecte_pea:.0f} €".replace(",", " ")
+            )
+        with col3:
             st.metric(
                 label="Performance",
                 value=f"{perf_pea['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_pea['pct']:.0f} %"
             )
-        with col3:
-            st.metric(
-                label="Capital injecté",
-                value=f"{cap_injecte_pea:.0f} €".replace(",", " ")
-            )
         with col4:
+            st.metric(
+                label="Performance Annualisée",
+                value=f"{tri:.1f} %",
+                help="TRI : conversion de la performance en base annuelle"
+            )
+        with col5:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 17.2 %"
             )
-        with col5:
-            st.metric(
-                label="Performance Nette",
-                value=f"{capital_net['euro']:.0f} €".replace(",", " "),
-                delta=f"{capital_net['pct']:.0f} %"
-            )
+
 
         st.divider()
 
@@ -139,10 +142,9 @@ match choix_global:
 
         mapping_ptf = {1: "PEA"}
         perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
-        liste_pdt = [1, 7]
-        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)
+        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [1, 7])
 
-        _, col6, col7, col8, _ = st.columns([0.5, 2, 2, 2, 0.5])
+        _, col6, col_, col7, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
         with col6:
             st.metric(
@@ -156,10 +158,5 @@ match choix_global:
                 value=f"{injecte:,.0f} €".replace(",", " "),
                 help="Somme des dépots sur la periode"
             )
-        with col8:
-            st.metric(
-                label="Performance Annualisée",
-                value=f"{perf_pea['pct']:.0f} %",
-                help="TRI : conversion de la performance en base annuelle"
-            )
+
         

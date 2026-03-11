@@ -59,6 +59,7 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_perf_etf(df)` | df | `dict {euro, pct}` |
 | `get_poids_enveloppes(df)` | df | `dict {etf, pee, livret}` |
 | `get_perf_nette(df, ptf_id)` | df, int | `dict {net, euro, pct}` |
+| `get_tri(df, engine, liste_ptf)` | df, engine, list | `float` |
 
 ### 2. Logique Temporelle
 > Liées au slider de période. Basées sur `df_histo` et `df_apports`.

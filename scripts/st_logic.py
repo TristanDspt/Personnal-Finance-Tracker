@@ -1,4 +1,5 @@
 import pandas as pd
+from pyxirr import xirr
 
 # =============================================================================
 # st_logic.py
@@ -639,3 +640,54 @@ def get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id):
         euro, pct = 0, 0
 
     return {"euro": euro, "pct": pct}
+
+
+def get_tri(df, engine, liste_ptf):
+    """
+    Calcule le Taux de Rendement Interne (TRI / XIRR) pour une ou plusieurs enveloppes.
+
+    Reproduit la logique de TRI.PAIEMENTS d'Excel :
+    - Flux négatifs : les apports historiques (argent sorti de la poche)
+    - Flux positif final : le capital actuel à la date d'aujourd'hui
+
+    Args:
+        df (DataFrame)      : view_global_portefeuille (snapshot instantané)
+        engine              : connexion SQLAlchemy
+        liste_ptf (list)    : liste des ptf_id à inclure — ex: [1, 2] pour PEA+CTO
+
+    Returns:
+        float: TRI annualisé en %
+    """
+
+    # --- 1. RÉCUPÉRATION DES FLUX HISTORIQUES ---
+    # On prend uniquement les APPORT (dépôts cash réels sur la poche broker)
+    # Les ACHAT sont exclus — ce serait un double comptage avec les APPORT
+    query = """
+        SELECT
+            pdt.ptf_id,
+            mvt_date,
+            -(mvt_nb_parts * mvt_prix + mvt_frais) AS calcul
+        FROM mouvement_mvt mvt
+        JOIN produit_financier_pdt pdt ON mvt.pdt_id = pdt.pdt_id
+        WHERE mvt_type_mouvement IN ('APPORT')
+        AND pdt.ptf_id IN %(liste_ptf)s
+    """
+
+    df_tri = pd.read_sql(query, engine, params={"liste_ptf": tuple(liste_ptf)})
+    df_tri = df_tri.sort_values('mvt_date')
+
+    # --- 2. CONSTRUCTION DES LISTES XIRR ---
+    flux  = df_tri["calcul"].tolist()
+    dates = df_tri["mvt_date"].tolist()
+
+    # --- 3. AJOUT DU FLUX FINAL POSITIF ---
+    # Capital actuel = ce qu'on récupèrerait si on vendait tout aujourd'hui
+    capital = df.query("ptf_id == @liste_ptf")['capital_actuel'].sum()
+    flux.append(capital)
+    dates.append(pd.Timestamp.today())
+
+    # --- 4. CALCUL DU TRI ---
+    tri = xirr(dates, flux)
+
+    return tri * 100  # Converti en %
+    
