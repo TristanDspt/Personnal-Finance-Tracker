@@ -53,7 +53,7 @@ with st.sidebar:
     st.title("⚙️ Menu")
 
     # Choix de l'enveloppe
-    choix_global = st.sidebar.radio("Choix", ["ETF", "PEA", "CTO", "STEF", "CiC", "Livrets"])
+    choix_global = st.sidebar.radio("Choix", ["ETF", "PEA", "CTO", "STEF", "CiC"])
 
     st.divider()
 
@@ -99,7 +99,7 @@ match choix_global:
         fig_etf = charts.make_donuts(
         df=df_etf_donut, names='nom_pour_legende', values='capital_actuel',
         color_discrete_map={"S&P 500": "#822A2A", "Gold": "#D3AF37"},
-        rotation=50, labels="Poids ETF", taille=100
+        rotation=50, labels="Poids ETF", taille=200
         )
 
         st.markdown("<h2 style='text-align: center;'>ETF : PEA & CTO</h2>", unsafe_allow_html=True)
@@ -107,34 +107,31 @@ match choix_global:
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric(
                 label="Capital Total",
                 value=f"{capital:,.0f} €".replace(",", " ")
             )
-
-        with col2:
-
             st.metric(
                 label="Capital injecté",
                 value=f"{cap_injecte:.0f} €".replace(",", " ")
             )
-        with col3:
+
+        with col2:
             st.metric(
                 label="Performance",
                 value=f"{perf['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf['pct']:.0f} %"
             )
-        with col4:
             st.metric(
                 label="Performance Annualisée",
                 value=f"{tri:.1f} %",
                 help="TRI : conversion de la performance en base annuelle"
             )
-        with col5: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
 
+        with col3: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
 
         st.divider()
 
@@ -197,7 +194,7 @@ match choix_global:
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
-        col1, col2, col3, col4, col5 = st.columns(5)
+        _, col1, col2, col3, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
         with col1:
             st.metric(
@@ -206,30 +203,32 @@ match choix_global:
             )
 
         with col2:
-
             st.metric(
                 label="Capital injecté",
                 value=f"{cap_injecte:.0f} €".replace(",", " ")
             )
+
         with col3:
             st.metric(
                 label="Performance",
                 value=f"{perf['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf['pct']:.0f} %"
             )
+
+        _, col4, col5, _ = st.columns([0.5, 1, 1, 0.5])
+
         with col4:
-            st.metric(
-                label="Performance Annualisée",
-                value=f"{tri:.1f} %",
-                help="TRI : conversion de la performance en base annuelle"
-            )
-        with col5:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 17.2 %"
             )
-
+        with col5:
+            st.metric(
+                label="Performance Annualisée",
+                value=f"{tri:.1f} %",
+                help="TRI : conversion de la performance en base annuelle"
+            )
 
         st.divider()
 
@@ -292,7 +291,7 @@ match choix_global:
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
-        col1, col2, col3, col4, col5 = st.columns(5)
+        _, col1, col2, col3, _ = st.columns([0.5, 2, 2, 2, 0.5])
 
         with col1:
             st.metric(
@@ -301,30 +300,32 @@ match choix_global:
             )
 
         with col2:
-
             st.metric(
                 label="Capital injecté",
                 value=f"{cap_injecte:.0f} €".replace(",", " ")
             )
+
         with col3:
             st.metric(
                 label="Performance",
                 value=f"{perf['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf['pct']:.0f} %"
             )
+
+        _, col4, col5, _ = st.columns([0.5, 1, 1, 0.5])
+
         with col4:
+            st.metric(
+                label="Capital net",
+                value=f"{capital_net['net']:.0f} €".replace(",", " "),
+                help="Capital net d'impots : 17.2 %"
+            )
+        with col5:
             st.metric(
                 label="Performance Annualisée",
                 value=f"{tri:.1f} %",
                 help="TRI : conversion de la performance en base annuelle"
             )
-        with col5:
-            st.metric(
-                label="Capital net",
-                value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 30 %"
-            )
-
 
         st.divider()
 
@@ -388,7 +389,7 @@ match choix_global:
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             st.metric(
@@ -398,33 +399,35 @@ match choix_global:
 
         with col2:
             st.metric(
-                label="Capital injecté",
-                value=f"{cap_injecte:,.0f} €".replace(",", " ")
-            )
-            st.metric(
-                label="Abondement reçu",
-                value=f"{abondement:,.0f} €".replace(",", " ")
-            )
-
-        with col3:
-            st.metric(
                 label="Performance",
                 value=f"{perf['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf['pct']:.0f} %"
             )
-        with col4:
+        with col3:
             st.metric(
                 label="Performance Annualisée",
                 value=f"{tri:.1f} %",
                 help="TRI : conversion de la performance en base annuelle"
             )
-        with col5:
+        with col4:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 30 %"
             )
+        
+        _, col5, _, col6, _ = st.columns([0.5, 2, 1, 2, 0.5])
 
+        with col5:
+            st.metric(
+                label="Capital injecté",
+                value=f"{cap_injecte:,.0f} €".replace(",", " ")
+            )
+        with col6:
+            st.metric(
+                label="Abondement reçu",
+                value=f"{abondement:,.0f} €".replace(",", " ")
+            )
 
         st.divider()
 
@@ -437,27 +440,27 @@ match choix_global:
         haut = df_cotation.iloc[0]['max']
         bas = df_cotation.iloc[0]['min']
 
-        col6, col7, col8, col9 = st.columns(4)
+        col7, col8, col9, col10 = st.columns(4)
 
-        with col6:
+        with col7:
             st.metric(
                 label="Performance",
                 value=f"{perf_ptf['STEF']['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_ptf['STEF']['pct']:.0f} %"
             )
-        with col7:
+        with col8:
             st.metric(
                 label="Injecté",
                 value=f"{injecte:,.0f} €".replace(",", " "),
                 help="Somme des dépots sur la periode"
             )
-        with col8:
+        with col9:
             st.metric(
                 label="Haut",
                 value=f"{haut:,.2f} €".replace(",", " "),
                 help=f"Cours le plus haut sur"
             )
-        with col9:
+        with col10:
             st.metric(
                 label="Bas",
                 value=f"{bas:,.2f} €".replace(",", " "),
