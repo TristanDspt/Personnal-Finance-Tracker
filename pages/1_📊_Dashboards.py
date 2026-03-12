@@ -82,7 +82,96 @@ match choix_global:
 
 # DASH ETF
 
-    # case "CTO":
+
+    case "ETF":
+        df_etf = df.query("ptf_id in (1, 2)")
+        df_cotation = db.get_cotations_pdt(engine, 2, date_debut)
+        capital = logic.get_patrimoine_total(df_etf)
+        perf = logic.get_perf_marches(df_etf)
+        cap_injecte = df_etf['capital_investi'].sum()
+        capital_net = logic.get_perf_nette(df, 2)
+        tri = logic.get_tri(df, engine, [1, 2])
+
+        # DONUTS — Préparation des DataFrames filtrés par enveloppe
+        df_etf_donut = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
+        df_etf_donut['nom_pour_legende'] = df_etf_donut['ptf_id'].map({1: "S&P 500", 2: "Gold"})
+
+        fig_etf = charts.make_donuts(
+        df=df_etf_donut, names='nom_pour_legende', values='capital_actuel',
+        color_discrete_map={"S&P 500": "#822A2A", "Gold": "#D3AF37"},
+        rotation=50, labels="Poids ETF", taille=100
+        )
+
+        st.markdown("<h2 style='text-align: center;'>ETF : PEA & CTO</h2>", unsafe_allow_html=True)
+    
+        st.divider()
+
+        # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            st.metric(
+                label="Capital Total",
+                value=f"{capital:,.0f} €".replace(",", " ")
+            )
+
+        with col2:
+
+            st.metric(
+                label="Capital injecté",
+                value=f"{cap_injecte:.0f} €".replace(",", " ")
+            )
+        with col3:
+            st.metric(
+                label="Performance",
+                value=f"{perf['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf['pct']:.0f} %"
+            )
+        with col4:
+            st.metric(
+                label="Performance Annualisée",
+                value=f"{tri:.1f} %",
+                help="TRI : conversion de la performance en base annuelle"
+            )
+        with col5: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
+
+
+        st.divider()
+
+        # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
+        st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
+    
+        mapping_ptf = {1: "PEA", 2: "CTO"}
+        perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+        perf_etf_p = logic.get_perf_etf_periode(df_histo, df_periode, date_debut, duree)
+        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [1, 2, 7, 8])
+
+        col6, col7, col8, col9 = st.columns(4)
+
+        with col6:
+            st.metric(
+                label="Performance ETF",
+                value=f"{perf_etf_p['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_etf_p['pct']:.0f} %"
+            )
+        with col7:
+            st.metric(
+                label="Injecté",
+                value=f"{injecte:,.0f} €".replace(",", " "),
+                help="Somme des dépots sur la periode"
+            )
+        with col8:
+            st.metric(
+                label="Performance PEA",
+                value=f"{perf_ptf['PEA']['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['PEA']['pct']:.0f} %"
+            )
+        with col9:
+            st.metric(
+                label="Performance CTO",
+                value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['CTO']['pct']:.0f} %"
+            )
 
 
 # DASH PEA
@@ -92,16 +181,16 @@ match choix_global:
         df_pea = df.query("ptf_id == 1")
         df_cotation = db.get_cotations_pdt(engine, 1, date_debut)
         last = df_cotation.iloc[0]['cot_prix']
-        capital_pea = logic.get_patrimoine_total(df_pea)
-        perf_pea = logic.get_perf_marches(df_pea)
-        cap_injecte_pea = df_pea['capital_investi'].sum()
+        capital = logic.get_patrimoine_total(df_pea)
+        perf = logic.get_perf_marches(df_pea)
+        cap_injecte = df_pea['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 1)
         tri = logic.get_tri(df, engine, [1])
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
 
         st.metric(
-            label=f"Derniere Cotation",
+            label=f"Dernier Cours",
             value=f"{last:,.2f} €".replace(",", " ")
         )
     
@@ -113,20 +202,20 @@ match choix_global:
         with col1:
             st.metric(
                 label="Capital Total",
-                value=f"{capital_pea:,.0f} €".replace(",", " ")
+                value=f"{capital:,.0f} €".replace(",", " ")
             )
 
         with col2:
 
             st.metric(
                 label="Capital injecté",
-                value=f"{cap_injecte_pea:.0f} €".replace(",", " ")
+                value=f"{cap_injecte:.0f} €".replace(",", " ")
             )
         with col3:
             st.metric(
                 label="Performance",
-                value=f"{perf_pea['euro']:,.0f} €".replace(",", " "),
-                delta=f"{perf_pea['pct']:.0f} %"
+                value=f"{perf['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf['pct']:.0f} %"
             )
         with col4:
             st.metric(
@@ -148,7 +237,7 @@ match choix_global:
         st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
     
         mapping_ptf = {1: "PEA"}
-        perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+        perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [1, 7])
         haut = df_cotation.iloc[0]['max']
         bas = df_cotation.iloc[0]['min']
@@ -158,8 +247,8 @@ match choix_global:
         with col6:
             st.metric(
                 label="Performance",
-                value=f"{perf_ptf_pea['PEA']['euro']:,.0f} €".replace(",", " "),
-                delta=f"{perf_ptf_pea['PEA']['pct']:.0f} %"
+                value=f"{perf_ptf['PEA']['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['PEA']['pct']:.0f} %"
             )
         with col7:
             st.metric(
@@ -180,4 +269,97 @@ match choix_global:
                 help=f"Cours le plus bas"
             )
 
-        
+
+# DASH CTO
+
+    case "CTO":
+        df_cto = df.query("ptf_id == 2")
+        df_cotation = db.get_cotations_pdt(engine, 2, date_debut)
+        last = df_cotation.iloc[0]['cot_prix']
+        capital = logic.get_patrimoine_total(df_cto)
+        perf = logic.get_perf_marches(df_cto)
+        cap_injecte = df_cto['capital_investi'].sum()
+        capital_net = logic.get_perf_nette(df, 2)
+        tri = logic.get_tri(df, engine, [2])
+
+        st.markdown("<h2 style='text-align: center;'>CTO : GOLD</h2>", unsafe_allow_html=True)
+
+        st.metric(
+            label=f"Dernier Cours",
+            value=f"{last:,.2f} €".replace(",", " ")
+        )
+    
+        st.divider()
+
+        # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            st.metric(
+                label="Capital Total",
+                value=f"{capital:,.0f} €".replace(",", " ")
+            )
+
+        with col2:
+
+            st.metric(
+                label="Capital injecté",
+                value=f"{cap_injecte:.0f} €".replace(",", " ")
+            )
+        with col3:
+            st.metric(
+                label="Performance",
+                value=f"{perf['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf['pct']:.0f} %"
+            )
+        with col4:
+            st.metric(
+                label="Performance Annualisée",
+                value=f"{tri:.1f} %",
+                help="TRI : conversion de la performance en base annuelle"
+            )
+        with col5:
+            st.metric(
+                label="Capital net",
+                value=f"{capital_net['net']:.0f} €".replace(",", " "),
+                help="Capital net d'impots : 30 %"
+            )
+
+
+        st.divider()
+
+        # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
+        st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
+    
+        mapping_ptf = {2: "CTO"}
+        perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+        injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [2, 8])
+        haut = df_cotation.iloc[0]['max']
+        bas = df_cotation.iloc[0]['min']
+
+        col6, col7, col8, col9 = st.columns(4)
+
+        with col6:
+            st.metric(
+                label="Performance",
+                value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['CTO']['pct']:.0f} %"
+            )
+        with col7:
+            st.metric(
+                label="Injecté",
+                value=f"{injecte:,.0f} €".replace(",", " "),
+                help="Somme des dépots sur la periode"
+            )
+        with col8:
+            st.metric(
+                label="Haut",
+                value=f"{haut:,.2f} €".replace(",", " "),
+                help=f"Cours le plus haut sur"
+            )
+        with col9:
+            st.metric(
+                label="Bas",
+                value=f"{bas:,.2f} €".replace(",", " "),
+                help=f"Cours le plus bas"
+            )

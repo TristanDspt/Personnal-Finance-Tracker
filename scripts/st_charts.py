@@ -28,10 +28,10 @@ def apply_style(fig):
     )
 
 
-def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids):
+def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids=None, taille=200):
     """
-    Crée un donut chart générique pour afficher le poids d'une enveloppe.
-    Utilisé 3 fois dans Home.py : ETF, PEE, Livrets.
+    Crée un donut chart générique pour afficher la répartition d'une enveloppe.
+    Utilisé dans Home.py (poids global) et Dashboards.py (répartition interne).
 
     Args:
         df (DataFrame): données filtrées pour ce donut (ex: df.query("ptf_id in [1, 2]"))
@@ -40,16 +40,18 @@ def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids):
         color_discrete_map (dict): mapping label → couleur hex (ex: {"S&P 500": "#822A2A"})
         rotation (int): angle de départ du premier secteur (en degrés)
         labels (str): texte affiché au centre du donut (ex: "Poids ETF")
-        poids (float): valeur du poids en % affichée en grand au centre (ex: 42.0)
+        poids (float, optional): poids en % affiché en grand au centre. 
+                                 Si None, le label est centré sans valeur. Default: None
+        taille (int, optional): hauteur du graphique en pixels. Default: 200
 
     Returns:
         go.Figure: figure Plotly prête à être affichée avec st.plotly_chart()
     """
-    # Layout commun à tous les donuts : taille, fond transparent, pas de légende
+    # Layout commun : taille dynamique, fond transparent, pas de légende
     common_layout = dict(
-        height=180,
+        height=taille,
         showlegend=False,
-        margin=dict(t=0, b=0, l=0, r=0),
+        margin=dict(t=0, b=10, l=0, r=0),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         separators=", "
@@ -70,14 +72,14 @@ def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids):
     fig.update_traces(rotation=rotation)
 
     # Layout + annotations : label en haut, poids en grand en bas
-    fig.update_layout(
-        common_layout,
-        hoverlabel=dict(font_size=15),
-        annotations=[
-            dict(text=labels, x=0.5, y=0.6, showarrow=False, font=dict(size=18)),
-            dict(text=f"<b>{poids:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35))
-        ]
-    )
+    annotations = []
+    if poids is not None:
+        annotations.append(dict(text=labels, x=0.5, y=0.6, showarrow=False, font=dict(size=18)))
+        annotations.append(dict(text=f"<b>{poids:.0f}%</b>", x=0.51, y=0.4, showarrow=False, font=dict(size=35)))
+    else:
+        annotations.append(dict(text=labels, x=0.5, y=0.5, showarrow=False, font=dict(size=18)))
+    
+    fig.update_layout(common_layout, hoverlabel=dict(font_size=15), annotations=annotations)
 
     return fig
 

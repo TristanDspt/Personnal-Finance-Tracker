@@ -57,26 +57,6 @@ def get_perf_marches(df):
     return {"euro": profit_euro, "pct": profit_pct}
 
 
-def get_perf_etf(df):
-    """
-    Calcule la performance des ETF (pdt_id 1 et 2 : S&P500 + Gold).
-
-    Args:
-        df (DataFrame): view_global_portefeuille
-
-    Returns:
-        dict: {"euro": float, "pct": float}
-    """
-    # Filtre sur les deux ETF uniquement
-    df_etf_kpi = df.query("pdt_id in [1, 2]")
-    perf_etf_euro = df_etf_kpi['profit_euro'].sum()
-    investi_etf = df_etf_kpi['capital_investi'].sum()
-
-    perf_etf_pct = (perf_etf_euro / investi_etf * 100) if investi_etf > 0 else 0
-
-    return {"euro": perf_etf_euro, "pct": perf_etf_pct}
-
-
 def get_poids_enveloppes(df):
     """
     Calcule le poids de chaque enveloppe dans le patrimoine total (en %).

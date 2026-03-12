@@ -103,7 +103,8 @@ with st.sidebar:
 
 capital      = logic.get_patrimoine_total(df)
 perf_marches = logic.get_perf_marches(df)
-perf_etf     = logic.get_perf_etf(df)
+df_etf       = df.query("ptf_id in (1, 2)")
+perf_etf     = logic.get_perf_marches(df_etf)
 poids        = logic.get_poids_enveloppes(df)
 
 
