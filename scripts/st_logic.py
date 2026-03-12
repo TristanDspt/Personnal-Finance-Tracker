@@ -541,7 +541,7 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
 def get_perf_nette(df, ptf_id):
     """
     Calcule le capital net et la performance après fiscalité sur les plus-values.
-    PEA/PEE : 17.2% | CTO : 30%
+    PEA/PEE : 18.6% | CTO : 31.4%
     Si pas de plus-value, retourne le capital actuel brut.
 
     Args:
@@ -551,7 +551,7 @@ def get_perf_nette(df, ptf_id):
     Returns:
         dict: {"net": float, "euro": float, "pct": float}
     """
-    taux = {1: 17.2, 2: 30, 3: 17.2, 4: 17.2}  # PEA=1, CTO=2, PEE=3,4
+    taux = {1: 18.6, 2: 31.4, 3: 18.6, 4: 18.6}  # PEA=1, CTO=2, PEE=3,4
 
     df = df.copy()
     df = df.query("ptf_id == @ptf_id and pdt_cash == False")
@@ -577,7 +577,7 @@ def get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id):
     """
     Calcule la performance nette d'impôts sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
-    PEA/PEE : 17.2% | CTO : 30%
+    PEA/PEE : 18.6% | CTO : 31.4%
 
     ⚠️ Si snap_debut['jour'] > date_debut, la période remonte avant le 1er mouvement :
     on traite alors comme "Max" (profit total depuis le début).
@@ -592,7 +592,7 @@ def get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id):
     Returns:
         dict: {"perf_periode_euro": float, "perf_periode_pct": float}
     """
-    taux = {1: 17.2, 2: 30, 3: 17.2, 4: 17.2}  # PEA=1, CTO=2, PEE=3,4
+    taux = {1: 18.6, 2: 31.4, 3: 18.6, 4: 18.6}  # PEA=1, CTO=2, PEE=3,4
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
     # Agrégation journalière sur la période
