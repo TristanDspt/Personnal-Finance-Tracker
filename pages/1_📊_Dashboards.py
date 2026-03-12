@@ -147,7 +147,6 @@ match choix_global:
         # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
         st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
     
-
         mapping_ptf = {1: "PEA"}
         perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [1, 7])
