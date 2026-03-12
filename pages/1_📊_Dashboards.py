@@ -90,6 +90,8 @@ match choix_global:
     case "PEA":
 
         df_pea = df.query("ptf_id == 1")
+        df_cotation = db.get_cotations_pdt(engine, 1, date_debut)
+        last = df_cotation.iloc[0]['cot_prix']
         capital_pea = logic.get_patrimoine_total(df_pea)
         perf_pea = logic.get_perf_marches(df_pea)
         cap_injecte_pea = df_pea['capital_investi'].sum()
@@ -97,6 +99,12 @@ match choix_global:
         tri = logic.get_tri(df, engine, [1])
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
+
+        st.metric(
+            label=f"Derniere Cotation",
+            value=f"{last:,.2f} €".replace(",", " ")
+        )
+    
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
@@ -143,8 +151,10 @@ match choix_global:
         mapping_ptf = {1: "PEA"}
         perf_ptf_pea = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         injecte = logic.get_injecte_periode(df_histo, df_periode, duree, date_debut, [1, 7])
+        haut = df_cotation.iloc[0]['max']
+        bas = df_cotation.iloc[0]['min']
 
-        _, col6, col_, col7, _ = st.columns([0.5, 2, 2, 2, 0.5])
+        col6, col7, col8, col9 = st.columns(4)
 
         with col6:
             st.metric(
@@ -157,6 +167,18 @@ match choix_global:
                 label="Injecté",
                 value=f"{injecte:,.0f} €".replace(",", " "),
                 help="Somme des dépots sur la periode"
+            )
+        with col8:
+            st.metric(
+                label="Haut",
+                value=f"{haut:,.2f} €".replace(",", " "),
+                help=f"Cours le plus haut sur"
+            )
+        with col9:
+            st.metric(
+                label="Bas",
+                value=f"{bas:,.2f} €".replace(",", " "),
+                help=f"Cours le plus bas"
             )
 
         
