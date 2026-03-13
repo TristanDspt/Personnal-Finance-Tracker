@@ -1,5 +1,9 @@
 # 🏛️ Personal Finance Tracker
 
+![Python](https://img.shields.io/badge/Python-3.14-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.54-red)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-green)
+
 Projet de migration d'une gestion financière complexe (anciennement sous Excel) vers une architecture robuste **Python / PostgreSQL / Streamlit**. 
 L'outil centralise des actifs variés (Actions, ETF, PEE, Livrets) et automatise le suivi de performance.
 
