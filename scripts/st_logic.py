@@ -622,7 +622,7 @@ def get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id):
     return {"euro": euro, "pct": pct}
 
 
-def get_tri(df, engine, liste_ptf):
+def get_tri_ptf(df, engine, liste_ptf):
     """
     Calcule le Taux de Rendement Interne (TRI / XIRR) pour une ou plusieurs enveloppes.
 
@@ -649,7 +649,7 @@ def get_tri(df, engine, liste_ptf):
             -(mvt_nb_parts * mvt_prix + mvt_frais) AS calcul
         FROM mouvement_mvt mvt
         JOIN produit_financier_pdt pdt ON mvt.pdt_id = pdt.pdt_id
-        WHERE mvt_type_mouvement IN ('APPORT')
+        WHERE mvt_type_mouvement IN ('APPORT', 'ABONDEMENT')
         AND pdt.ptf_id IN %(liste_ptf)s
     """
 
@@ -671,3 +671,116 @@ def get_tri(df, engine, liste_ptf):
 
     return tri * 100  # Converti en %
     
+
+def get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
+    """
+    Calcule la performance de chaque produit sur la période sélectionnée.
+    Gère les cas spéciaux "Début Mois" et "Max".
+
+    ⚠️ Si snap_debut['jour'] > date_debut, cela signifie que la période demandée
+    remonte avant le premier mouvement — on traite alors comme "Max" (profit total).
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
+        df_periode (DataFrame): df_histo filtré sur la période
+        duree (str): valeur du slider
+        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
+        liste_pdt (list): liste des pdt_id à inclure — ex: [4, 5, 6] pour CiC
+
+    Returns:
+        dict: {pdt_id: {"euro": float, "pct": float}} — ex: {4: {"euro": 120.0, "pct": 3.5}}
+    """
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+
+    perf = {}
+
+    for pdt_id in liste_pdt:
+        # Agrégation journalière pour ce portefeuille sur la période
+        df_temp = (df_periode.query("pdt_id == @pdt_id")
+                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                   .sum()
+                   .reset_index()
+                   .query("capital_investi + abondement_recu > 1")
+                   .sort_values('jour'))
+
+        if not df_temp.empty:
+            snap_fin = df_temp.iloc[-1]
+
+            if duree == "Début Mois":
+                # Snapshot avant le 1er du mois dans l'historique complet
+                snap_debut = (df_histo.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
+                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                              .sum()
+                              .reset_index()
+                              .query("capital_investi + abondement_recu > 1")
+                              .sort_values('jour')
+                              .iloc[-1])
+            else:
+                snap_debut = df_temp.iloc[0]
+
+            # Si snap_debut est postérieur à date_debut → la période remonte avant le 1er mouvement
+            # On traite comme "Max" : profit total depuis le début
+            if duree == "Max" or snap_debut['jour'] > date_debut:
+                euro = snap_fin['profit_euro']
+            else:
+                euro = snap_fin['profit_euro'] - snap_debut['profit_euro']
+
+            # Base = effort perso + abondement pour un calcul de ROI correct
+            base = snap_fin['capital_investi'] + snap_fin['abondement_recu']
+            pct = (euro / base * 100) if base > 0 else 0
+        else:
+            euro, pct = 0, 0
+
+        perf[pdt_id] = {"euro": euro, "pct": pct}
+
+    return perf
+
+def get_tri_pdt(df, engine, liste_pdt):
+    """
+    Calcule le Taux de Rendement Interne (TRI / XIRR) pour chaque produit d'une liste.
+
+    Reproduit la logique de TRI.PAIEMENTS d'Excel :
+    - Flux négatifs : les apports et abondements historiques par produit
+    - Flux positif final : le capital actuel à la date d'aujourd'hui
+
+    Args:
+        df (DataFrame)      : view_global_portefeuille (snapshot instantané)
+        engine              : connexion SQLAlchemy
+        liste_pdt (list)    : liste des pdt_id à inclure — ex: [4, 5, 6] pour CiC
+
+    Returns:
+        dict: {pdt_id: tri_annualisé} — ex: {4: 3.2, 5: 5.1, 6: 7.4}
+    """
+    tri = {}
+
+    for pdt_id in liste_pdt:
+        # --- 1. RÉCUPÉRATION DES FLUX HISTORIQUES ---
+        # On prend uniquement les APPORT (dépôts cash réels sur la poche broker)
+        # Les ACHAT sont exclus — ce serait un double comptage avec les APPORT
+        query = """
+            SELECT
+                pdt_id,
+                mvt_date,
+                -(mvt_nb_parts * mvt_prix + mvt_frais) AS calcul
+            FROM mouvement_mvt mvt
+            WHERE mvt_type_mouvement IN ('APPORT', 'ABONDEMENT')
+            AND pdt_id = %(pdt_id)s
+        """
+
+        df_tri = pd.read_sql(query, engine, params={"pdt_id": pdt_id})
+        df_tri = df_tri.sort_values('mvt_date')
+
+        # --- 2. CONSTRUCTION DES LISTES XIRR ---
+        flux  = df_tri["calcul"].tolist()
+        dates = df_tri["mvt_date"].tolist()
+
+        # --- 3. AJOUT DU FLUX FINAL POSITIF ---
+        # Capital actuel = ce qu'on récupèrerait si on vendait tout aujourd'hui
+        capital = df.query("pdt_id == @pdt_id")['capital_actuel'].sum()
+        flux.append(capital)
+        dates.append(pd.Timestamp.today())
+
+        # --- 4. CALCUL DU TRI ---
+        tri[pdt_id] = xirr(dates, flux) * 100
+
+    return tri

@@ -82,7 +82,6 @@ match choix_global:
 
 # DASH ETF
 
-
     case "ETF":
         df_etf = df.query("ptf_id in (1, 2)")
         df_cotation = db.get_cotations_pdt(engine, 2, date_debut)
@@ -90,14 +89,14 @@ match choix_global:
         perf = logic.get_perf_marches(df_etf)
         cap_injecte = df_etf['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 2)
-        tri = logic.get_tri(df, engine, [1, 2])
+        tri = logic.get_tri_ptf(df, engine, [1, 2])
 
         # DONUTS — Préparation des DataFrames filtrés par enveloppe
-        df_etf_donut = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
-        df_etf_donut['nom_pour_legende'] = df_etf_donut['ptf_id'].map({1: "S&P 500", 2: "Gold"})
+        df_donut = df.query("ptf_id in [1, 2]").groupby('ptf_id')['capital_actuel'].sum().reset_index()
+        df_donut['nom_pour_legende'] = df_donut['ptf_id'].map({1: "S&P 500", 2: "Gold"})
 
-        fig_etf = charts.make_donuts(
-        df=df_etf_donut, names='nom_pour_legende', values='capital_actuel',
+        fig = charts.make_donuts(
+        df=df_donut, names='nom_pour_legende', values='capital_actuel',
         color_discrete_map={"S&P 500": "#822A2A", "Gold": "#D3AF37"},
         rotation=50, labels="Poids ETF", taille=194
         )
@@ -132,7 +131,7 @@ match choix_global:
             )
 
 
-        with col3: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
+        with col3: st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
         st.divider()
 
@@ -183,7 +182,7 @@ match choix_global:
         perf = logic.get_perf_marches(df_pea)
         cap_injecte = df_pea['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 1)
-        tri = logic.get_tri(df, engine, [1])
+        tri = logic.get_tri_ptf(df, engine, [1])
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
 
@@ -224,7 +223,7 @@ match choix_global:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 17.2 %"
+                help="Capital net d'impots : 18.6 %"
             )
         with col5:
             st.metric(
@@ -281,7 +280,7 @@ match choix_global:
         perf = logic.get_perf_marches(df_cto)
         cap_injecte = df_cto['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 2)
-        tri = logic.get_tri(df, engine, [2])
+        tri = logic.get_tri_ptf(df, engine, [2])
 
         st.markdown("<h2 style='text-align: center;'>CTO : GOLD</h2>", unsafe_allow_html=True)
 
@@ -319,7 +318,7 @@ match choix_global:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 17.2 %"
+                help="Capital net d'impots : 18.6 %"
             )
         with col5:
             st.metric(
@@ -377,7 +376,7 @@ match choix_global:
         perf = logic.get_perf_marches(df_stef)
         cap_injecte = df_stef['capital_investi'].sum()
         capital_net = logic.get_perf_nette(df, 3)
-        tri = logic.get_tri(df, engine, [3])
+        tri = logic.get_tri_ptf(df, engine, [3])
 
         st.markdown("<h2 style='text-align: center;'>PEE : STEF</h2>", unsafe_allow_html=True)
 
@@ -396,14 +395,12 @@ match choix_global:
                 label="Capital Total",
                 value=f"{capital:,.0f} €".replace(",", " ")
             )
-
         with col2:
             st.metric(
                 label="Performance",
                 value=f"{perf['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf['pct']:.0f} %"
             )
-
         with col3:
             st.metric(
                 label="Performance Annualisée",
@@ -417,15 +414,13 @@ match choix_global:
             st.metric(
                 label="Capital net",
                 value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 30 %"
+                help="Capital net d'impots : 31,4 %"
             )
-
         with col5:
             st.metric(
                 label="Capital injecté",
                 value=f"{cap_injecte:,.0f} €".replace(",", " ")
             )
-
         with col6:
             st.metric(
                 label="Abondement reçu",
@@ -468,4 +463,126 @@ match choix_global:
                 label="Bas",
                 value=f"{bas:,.2f} €".replace(",", " "),
                 help=f"Cours le plus bas"
+            )
+
+
+# DASH CiC
+
+    case "CiC":
+        df_cic = df.query("ptf_id == 4")
+        df_cotation = db.get_cotations_pdt(engine, 4, date_debut)
+        capital = logic.get_patrimoine_total(df_cic)
+        abondement = df_cic["abondement_recu"].sum()
+        perf = logic.get_perf_marches(df_cic)
+        cap_injecte = df_cic['capital_investi'].sum()
+        capital_net = logic.get_perf_nette(df, 4)
+        tri = logic.get_tri_ptf(df, engine, [4])
+
+        # DONUTS — Préparation des DataFrames filtrés par enveloppe
+        df_donut = df.query("pdt_id in [4, 5, 6]").groupby('pdt_id')['capital_actuel'].sum().reset_index()
+        df_donut['nom_pour_legende'] = df_donut['pdt_id'].map({4: "Obligation", 5: "Equilibre", 6: "Stratégie"})
+
+        fig = charts.make_donuts(
+        df=df_donut, names='nom_pour_legende', values='capital_actuel',
+        color_discrete_map={"Obligation": "#018289", "Equilibre": "#0f228b", "Stratégie": "#fe330f"},
+        rotation=180, labels="Poids CiC", taille=194
+        )
+
+        st.markdown("<h2 style='text-align: center;'>PEE : CiC</h2>", unsafe_allow_html=True)
+    
+        st.divider()
+
+        # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                label="Capital Total",
+                value=f"{capital:,.0f} €".replace(",", " ")
+            )
+            st.metric(
+                label="Capital net",
+                value=f"{capital_net['net']:.0f} €".replace(",", " "),
+                help="Capital net d'impots : 31,4 %"
+            )
+        with col2:
+            st.metric(
+                label="Performance",
+                value=f"{perf['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf['pct']:.0f} %"
+            )
+            st.metric(
+                label="Capital injecté",
+                value=f"{cap_injecte:,.0f} €".replace(",", " ")
+            )
+        with col3:
+            st.metric(
+                label="Performance Annualisée",
+                value=f"{tri:.1f} %",
+                help="TRI : conversion de la performance en base annuelle"
+            )
+            st.metric(
+                label="Abondement reçu",
+                value=f"{abondement:,.0f} €".replace(",", " ")
+            )
+
+        with col4: st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            
+        st.divider()
+
+        # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
+        tri_pdt = logic.get_tri_pdt(df, engine, [4, 5, 6])
+
+        col5, col6, col7 = st.columns(3)
+        
+        with col5:
+            st.metric(
+                label="Performance Annualisée Obligation",
+                value=f"{tri_pdt[4]:.1f} %",
+            )
+        with col6:
+            st.metric(
+                label="Performance Annualisée Equilibre",
+                value=f"{tri_pdt[5]:.1f} %",
+            )
+        with col7:
+            st.metric(
+                label="Performance Annualisée Stratégie",
+                value=f"{tri_pdt[6]:.1f} %",
+            )
+        
+        st.divider()
+
+        # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
+        st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
+    
+        mapping_ptf = {4: "CiC"}
+        perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+        perf_pdt = logic.get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, [4, 5, 6])
+
+        col7, col8, col9, col10 = st.columns(4)
+
+        with col7:
+            st.metric(
+                label="Performance CiC",
+                value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['CiC']['pct']:.0f} %"
+            )
+        with col8:
+            st.metric(
+                label="Performance Obligation",
+                value=f"{perf_pdt[4]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt[4]['pct']:.0f} %"
+            )
+        with col9:
+            st.metric(
+                label="Performance Equilibre",
+                value=f"{perf_pdt[5]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt[5]['pct']:.0f} %"
+            )
+        with col10:
+            st.metric(
+                label="Performance Stratégie",
+                value=f"{perf_pdt[6]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt[6]['pct']:.0f} %"
             )
