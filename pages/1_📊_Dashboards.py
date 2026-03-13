@@ -529,24 +529,40 @@ match choix_global:
             
         st.divider()
 
-        # KPIs GÉNÉRAUX — Capital total + perfs globales (hors période)
+        # KPIs GÉNÉRAUX — Capital total + perfs globales par ENVELOPPES (hors période)
+        perf_pdt_max = logic.get_perf_pdt_periode(df_histo, df_periode, duree='Max', date_debut=None, liste_pdt=[4, 5, 6])
         tri_pdt = logic.get_tri_pdt(df, engine, [4, 5, 6])
 
         col5, col6, col7 = st.columns(3)
         
         with col5:
             st.metric(
-                label="Performance Annualisée Obligation",
+                label="Performance Obligation",
+                value=f"{perf_pdt_max[4]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt_max[4]['pct']:.0f} %"
+            )
+            st.metric(
+                label="Performance Annualisée",
                 value=f"{tri_pdt[4]:.1f} %",
             )
         with col6:
             st.metric(
-                label="Performance Annualisée Equilibre",
+                label="Performance Equilibre",
+                value=f"{perf_pdt_max[5]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt_max[5]['pct']:.0f} %"
+            )
+            st.metric(
+                label="Performance Annualisée",
                 value=f"{tri_pdt[5]:.1f} %",
             )
         with col7:
             st.metric(
-                label="Performance Annualisée Stratégie",
+                label="Performance Stratégie",
+                value=f"{perf_pdt_max[6]['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_pdt_max[6]['pct']:.0f} %"
+            )
+            st.metric(
+                label="Performance Annualisée",
                 value=f"{tri_pdt[6]:.1f} %",
             )
         
@@ -559,27 +575,27 @@ match choix_global:
         perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         perf_pdt = logic.get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, [4, 5, 6])
 
-        col7, col8, col9, col10 = st.columns(4)
+        col8, col9, col10, col11 = st.columns(4)
 
-        with col7:
+        with col8:
             st.metric(
                 label="Performance CiC",
                 value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_ptf['CiC']['pct']:.0f} %"
             )
-        with col8:
+        with col9:
             st.metric(
                 label="Performance Obligation",
                 value=f"{perf_pdt[4]['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_pdt[4]['pct']:.0f} %"
             )
-        with col9:
+        with col10:
             st.metric(
                 label="Performance Equilibre",
                 value=f"{perf_pdt[5]['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_pdt[5]['pct']:.0f} %"
             )
-        with col10:
+        with col11:
             st.metric(
                 label="Performance Stratégie",
                 value=f"{perf_pdt[6]['euro']:,.0f} €".replace(",", " "),
