@@ -88,7 +88,6 @@ match choix_global:
         capital = logic.get_patrimoine_total(df_etf)
         perf = logic.get_perf_marches(df_etf)
         cap_injecte = df_etf['capital_investi'].sum()
-        capital_net = logic.get_perf_nette(df, 2)
         tri = logic.get_tri_ptf(df, engine, [1, 2])
 
         # DONUTS — Préparation des DataFrames filtrés par enveloppe
@@ -181,7 +180,7 @@ match choix_global:
         capital = logic.get_patrimoine_total(df_pea)
         perf = logic.get_perf_marches(df_pea)
         cap_injecte = df_pea['capital_investi'].sum()
-        capital_net = logic.get_perf_nette(df, 1)
+        capital_net = logic.get_capital_net(df, [1])
         tri = logic.get_tri_ptf(df, engine, [1])
 
         st.markdown("<h2 style='text-align: center;'>PEA : S&P 500</h2>", unsafe_allow_html=True)
@@ -222,7 +221,7 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net['net']:.0f} €".replace(",", " "),
+                value=f"{capital_net[1]:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col5:
@@ -279,7 +278,7 @@ match choix_global:
         capital = logic.get_patrimoine_total(df_cto)
         perf = logic.get_perf_marches(df_cto)
         cap_injecte = df_cto['capital_investi'].sum()
-        capital_net = logic.get_perf_nette(df, 2)
+        capital_net = logic.get_capital_net(df, [2])
         tri = logic.get_tri_ptf(df, engine, [2])
 
         st.markdown("<h2 style='text-align: center;'>CTO : GOLD</h2>", unsafe_allow_html=True)
@@ -317,7 +316,7 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net['net']:.0f} €".replace(",", " "),
+                value=f"{capital_net[2]:.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col5:
@@ -375,7 +374,7 @@ match choix_global:
         abondement = df_stef["abondement_recu"].sum()
         perf = logic.get_perf_marches(df_stef)
         cap_injecte = df_stef['capital_investi'].sum()
-        capital_net = logic.get_perf_nette(df, 3)
+        capital_net = logic.get_capital_net(df, [3])
         tri = logic.get_tri_ptf(df, engine, [3])
 
         st.markdown("<h2 style='text-align: center;'>PEE : STEF</h2>", unsafe_allow_html=True)
@@ -413,8 +412,8 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 31,4 %"
+                value=f"{capital_net[3]:.0f} €".replace(",", " "),
+                help="Capital net d'impots : 18.6 %"
             )
         with col5:
             st.metric(
@@ -475,7 +474,7 @@ match choix_global:
         abondement = df_cic["abondement_recu"].sum()
         perf = logic.get_perf_marches(df_cic)
         cap_injecte = df_cic['capital_investi'].sum()
-        capital_net = logic.get_perf_nette(df, 4)
+        capital_net = logic.get_capital_net(df, [4, 5, 6])
         tri = logic.get_tri_ptf(df, engine, [4])
 
         # DONUTS — Préparation des DataFrames filtrés par enveloppe
@@ -485,7 +484,7 @@ match choix_global:
         fig = charts.make_donuts(
         df=df_donut, names='nom_pour_legende', values='capital_actuel',
         color_discrete_map={"Obligation": "#018289", "Equilibre": "#0f228b", "Stratégie": "#fe330f"},
-        rotation=180, labels="Poids CiC", taille=194
+        rotation=175, labels="Poids CiC", taille=194
         )
 
         st.markdown("<h2 style='text-align: center;'>PEE : CiC</h2>", unsafe_allow_html=True)
@@ -502,8 +501,8 @@ match choix_global:
             )
             st.metric(
                 label="Capital net",
-                value=f"{capital_net['net']:.0f} €".replace(",", " "),
-                help="Capital net d'impots : 31,4 %"
+                value=f"{sum(capital_net.values()):.0f} €".replace(",", " "),
+                help="Capital net d'impots : 18.6 %"
             )
         with col2:
             st.metric(
@@ -586,3 +585,7 @@ match choix_global:
                 value=f"{perf_pdt[6]['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_pdt[6]['pct']:.0f} %"
             )
+
+df_debug = df.query("pdt_id == 5")
+print(df_debug[['capital_actuel', 'capital_investi', 'abondement_recu', 'profit_euro']])
+print(f"Calcul manuel : {df_debug['capital_actuel'].sum() - (df_debug['capital_investi'].sum() + df_debug['abondement_recu'].sum())}")

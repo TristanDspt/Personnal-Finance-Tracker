@@ -518,7 +518,7 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
     return injecte
    
 
-def get_perf_nette(df, ptf_id):
+def get_capital_net(df, liste_pdt):
     """
     Calcule le capital net et la performance après fiscalité sur les plus-values.
     PEA/PEE : 18.6% | CTO : 31.4%
@@ -531,95 +531,22 @@ def get_perf_nette(df, ptf_id):
     Returns:
         dict: {"net": float, "euro": float, "pct": float}
     """
-    taux = {1: 18.6, 2: 31.4, 3: 18.6, 4: 18.6}  # PEA=1, CTO=2, PEE=3,4
-
+    taux = {1: 18.6, 2: 31.4, 3: 18.6, 4: 18.6, 5: 18.6, 6: 18.6}
+    capital_net = {}
     df = df.copy()
-    df = df.query("ptf_id == @ptf_id and pdt_cash == False")
 
-    plus_value = (df['capital_actuel'] - df['capital_investi']).sum()
-    injecte = df['capital_investi'].sum()
-
-    # Fiscalité uniquement si plus-value positive
-    if plus_value > 0:
-        impot = plus_value * taux[ptf_id] / 100
-        capital_net = df['capital_actuel'].sum() - impot
-        perf_nette_euro = plus_value - impot
-    else:
-        capital_net = df['capital_actuel'].sum()
-        perf_nette_euro = plus_value
-
-    perf_nette_pct = (perf_nette_euro / injecte * 100) if injecte > 0 else 0
-
-    return {"net": capital_net, "euro": perf_nette_euro, "pct": perf_nette_pct}
-
-
-def get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id):
-    """
-    Calcule la performance nette d'impôts sur la période sélectionnée.
-    Gère les cas spéciaux "Début Mois" et "Max".
-    PEA/PEE : 18.6% | CTO : 31.4%
-
-    ⚠️ Si snap_debut['jour'] > date_debut, la période remonte avant le 1er mouvement :
-    on traite alors comme "Max" (profit total depuis le début).
-
-    Args:
-        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
-        df_periode (DataFrame): df_histo filtré sur la période
-        duree (str): valeur du slider
-        date_debut (pd.Timestamp): date de début calculée par get_date_debut()
-        ptf_id (int): id du portefeuille
-
-    Returns:
-        dict: {"perf_periode_euro": float, "perf_periode_pct": float}
-    """
-    taux = {1: 18.6, 2: 31.4, 3: 18.6, 4: 18.6}  # PEA=1, CTO=2, PEE=3,4
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
-
-    # Agrégation journalière sur la période
-    df_temp = (df_periode.query("ptf_id == @ptf_id")
-               .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-               .sum()
-               .reset_index()
-               .query("capital_investi + abondement_recu > 1")
-               .sort_values('jour'))
-
-    if not df_temp.empty:
-        snap_fin = df_temp.iloc[-1]
-
-        # Snapshot de début : avant le 1er du mois ou 1er jour de la période
-        if duree == "Début Mois":
-            snap_debut = (df_histo.query("ptf_id == @ptf_id and jour < @debut_mois_actuel")
-                          .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                          .sum()
-                          .reset_index()
-                          .query("capital_investi + abondement_recu > 1")
-                          .sort_values('jour')
-                          .iloc[-1])
-        else:
-            snap_debut = df_temp.iloc[0]
-
-        # Calcul de la PV sur la période
-        plus_value = snap_fin['profit_euro'] - snap_debut['profit_euro']
-
-        # Cas Max ou période remontant avant le 1er mouvement : profit total
-        if duree == "Max" or snap_debut['jour'] > date_debut:
-            pv_brute = snap_fin['profit_euro']
-        else:
-            pv_brute = plus_value
+    for pdt_id in liste_pdt:
+        df_temp = df.query("pdt_id == @pdt_id and pdt_cash == False and pdt_est_actif == True")
+        plus_value = df_temp['profit_euro'].sum()
 
         # Fiscalité uniquement si plus-value positive
-        if pv_brute > 0:
-            impot = pv_brute * taux[ptf_id] / 100
-            euro = pv_brute - impot
+        if plus_value > 0:
+            impot = plus_value * taux[pdt_id] / 100
+            capital_net[pdt_id] = df_temp['capital_actuel'].sum() - impot
         else:
-            euro = pv_brute
+            capital_net[pdt_id] = df_temp['capital_actuel'].sum()
 
-        pct = (euro / snap_fin['capital_investi'] * 100) if snap_fin['capital_investi'] > 0 else 0
-
-    else:
-        euro, pct = 0, 0
-
-    return {"euro": euro, "pct": pct}
+    return capital_net
 
 
 def get_tri_ptf(df, engine, liste_ptf):

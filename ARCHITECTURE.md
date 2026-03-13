@@ -58,7 +58,7 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_perf_marches(df)` | df | `dict {euro, pct}` |
 | `get_perf_etf(df)` | df | `dict {euro, pct}` |
 | `get_poids_enveloppes(df)` | df | `dict {etf, pee, livret}` |
-| `get_perf_nette(df, ptf_id)` | df, int | `dict {net, euro, pct}` |
+| `get_capital_net(df, pdt_id)` | df, int | `dict {pdt_id : net}` |
 | `get_tri_ptf(df, engine, liste_ptf)` | df, engine, list | `float` |
 
 ### 2. Logique Temporelle
@@ -72,7 +72,6 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_perf_etf_periode(df_histo, df_periode, date_debut, duree)` | df_histo, df_periode, date, str | `dict {euro, pct}` |
 | `get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping)` | df_histo, df_periode, str, date, dict | `dict {nom: {euro, pct}, ...}` |
 | `get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)` | df_histo, df_periode, str, date, list | `float` |
-| `get_perf_nette_periode(df_histo, df_periode, duree, date_debut, ptf_id)` | df_histo, df_periode, str, date, int | `dict {euro, pct}` |
 | `get_tableau_mensuel(df_histo, df_apports, duree, mapping)` | df_histo, df_apports, str, dict | `tuple (df_tableau, df_tableau_buffer)` |
 | `get_donnees_graph(df_tableau_buffer, df_apports, duree)` | df_tableau_buffer, df_apports, str | `tuple (df_apports_graph, df_capital_graph)` |
 
@@ -155,7 +154,7 @@ match choix_global:
         perf_ptf_pea  = get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
         liste_pdt     = [1]
         injecte_pea   = get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)
-        capital_net   = get_perf_nette(df, 1)
+        capital_net   = get_capital_net(df, [1])
         ...
 ```
 
