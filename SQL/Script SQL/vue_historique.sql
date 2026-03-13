@@ -35,7 +35,7 @@ mouvements_cumules AS (
 		    
 		    -- 2. Sur la ligne TITRE : 
 		    -- On compte l'achat comme un effort (+)
-		    WHEN gv.pdt_cash = False AND mvt.mvt_nb_parts > 0 AND mvt.mvt_type_mouvement != 'ABONDEMENT' 
+		    WHEN gv.pdt_cash = False AND mvt.mvt_nb_parts > 0 AND mvt.mvt_type_mouvement NOT IN ('ABONDEMENT', 'TRANSFERT') 
 		         THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais
 		    
 		    ELSE 0 

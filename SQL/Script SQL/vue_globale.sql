@@ -9,7 +9,7 @@ WITH flux_net AS (
     SELECT 
         pdt_id, 
         -- 1. TON EFFORT : Argent réellement sorti de ta poche (achats titres - hors abondement)
-        SUM(CASE WHEN mvt_nb_parts > 0 AND (mvt_type_mouvement != 'ABONDEMENT' OR mvt_type_mouvement IS NULL) 
+        SUM(CASE WHEN mvt_nb_parts > 0 AND (mvt_type_mouvement NOT IN ('ABONDEMENT', 'TRANSFERT') OR mvt_type_mouvement IS NULL) 
                  THEN (mvt_nb_parts * mvt_prix) + mvt_frais ELSE 0 END) AS effort_epargne_perso,
         
         -- 2. L'ABONDEMENT : Argent "cadeau" versé par l'entreprise
