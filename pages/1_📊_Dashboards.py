@@ -65,8 +65,9 @@ with st.sidebar:
         options=["Début Mois", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
         value="6 Mois"
     )
-    # Toggle pour afficher le graph d'historique des cours
-    histo_cours = st.toggle("Historique", value=False)
+    # Toggle pour afficher les graphs détaillés sur le desh CiC
+    if choix_global == "CiC":
+        vue_detail = st.toggle("Vue detaillée", value=False)
 
 
 # --- 4. LOGIQUE TEMPORELLE ---
@@ -172,10 +173,10 @@ match choix_global:
 
         # GRAPHIQUES — (réactif au slider)
 
-        # Lineplot récap
+        # Lineplot global
         df_apports = df_apports_pdt.query("pdt_id in (7, 8)").groupby('mois')['injecte'].sum().reset_index()
         mapping_tableau = {1: "PEA", 2: "CTO"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
         if duree not in ("1 Mois", "Début Mois"):
@@ -283,10 +284,10 @@ match choix_global:
         
         # GRAPHIQUES — (réactif au slider)
 
-        # Lineplot récap
+        # Lineplot global
         df_apports = df_apports_pdt.query("pdt_id == 7")
         mapping_tableau = {1: "PEA"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
         if duree not in ("1 Mois", "Début Mois"):
@@ -389,10 +390,10 @@ match choix_global:
 
         # GRAPHIQUES — (réactif au slider)
 
-        # Lineplot récap
+        # Lineplot global
         df_apports = df_apports_pdt.query("pdt_id == 8")
         mapping_tableau = {2: "CTO"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
         if duree not in ("1 Mois", "Début Mois"):
@@ -502,10 +503,10 @@ match choix_global:
             
         # GRAPHIQUES — (réactif au slider)
 
-        # Lineplot récap
+        # Lineplot global
         df_apports = df_apports_pdt.query("pdt_id == 3")
         mapping_tableau = {3: "STEF"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
         if duree not in ("1 Mois", "Début Mois"):
@@ -652,12 +653,37 @@ match choix_global:
 
         # GRAPHIQUES — (réactif au slider)
 
-        # Lineplot récap
+        # Lineplot global
         df_apports = df_apports_pdt.query("pdt_id in (4, 5, 6, 9)").groupby('mois')['injecte'].sum().reset_index()
         mapping_tableau = {4: "CiC"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
+        # Lineplot detaillé
+        df_apports = df_apports_pdt.query("pdt_id in (4, 5, 6)").groupby('mois')['injecte'].sum().reset_index()
+        mapping_tableau = {4: "Obligation", 5: "Equilibre", 6: "Stratégie"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_tableau)
+
+        df_graph_oblig = df_tableau_buffer[['Obligation', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Obligation': 'Total'})
+        df_graph_equi = df_tableau_buffer[['Equilibre', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Equilibre': 'Total'})
+        df_graph_strat = df_tableau_buffer[['Stratégie', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Stratégie': 'Total'})
+
+        df_apports_oblig, df_capital_oblig = logic.get_donnees_graph(df_graph_oblig, df_apports, duree)
+        df_apports_equil, df_capital_equil = logic.get_donnees_graph(df_graph_equi, df_apports, duree)
+        df_apports_strat, df_capital_strat = logic.get_donnees_graph(df_graph_strat, df_apports, duree)   
+
         if duree not in ("1 Mois", "Début Mois"):
-            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
-            st.plotly_chart(fig_global, width='stretch')
+            if not vue_detail:
+                fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+                st.plotly_chart(fig_global, width='stretch')
+            else:
+                cola, colb, colc = st.columns(3)
+                with cola:
+                    fig_global = charts.make_graph_global(df_apports_oblig, df_capital_oblig)
+                    st.plotly_chart(fig_global, width='stretch')
+                with colb:
+                    fig_global = charts.make_graph_global(df_apports_equil, df_capital_equil)
+                    st.plotly_chart(fig_global, width='stretch')
+                with colc:
+                    fig_global = charts.make_graph_global(df_apports_strat, df_capital_strat)
+                    st.plotly_chart(fig_global, width='stretch')

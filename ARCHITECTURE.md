@@ -97,10 +97,10 @@ scripts/database.py   ← connexion + chargement des vues
 | `get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping)` | df_histo, df_periode, str, date, dict | `dict {nom: {euro, pct}, ...}` |
 | `get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt)` | df_histo, df_periode, str, date, list | `dict {pdt_id: {euro, pct}}` |
 | `get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt)` | df_histo, df_periode, str, date, list | `float` |
-| `get_tableau_mensuel(df_histo, df_apports, duree, mapping)` | df_histo, df_apports, str, dict | `tuple (df_tableau, df_tableau_buffer)` |
+| `get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping)` | df_histo, df_apports, str, dict | `tuple (df_tableau, df_tableau_buffer)` |
 | `get_donnees_graph(df_tableau_buffer, df_apports, duree)` | df_tableau_buffer, df_apports, str | `tuple (df_apports_graph, df_capital_graph)` |
 
-> ⚠️ `get_tableau_mensuel` retourne un tuple :
+> ⚠️ `get_tableau_mensuel_ptf` retourne un tuple :
 > - `df_tableau` : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
 > - `df_tableau_buffer` : version avec mois de buffer pour `get_donnees_graph` (tri croissant, 1er mois conservé)
 
@@ -148,7 +148,7 @@ perf_ptf     = get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, map
 
 # 5. Tableau (doit précéder le graph)
 mapping_tableau = {1: "ETF", 2: "ETF", 3: "STEF", 4: "CiC", 6: "Livrets"}
-df_tableau, df_tableau_buffer = get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+df_tableau, df_tableau_buffer = get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
 
 # 6. Données graph (reçoit df_tableau_buffer, pas df_tableau)
 df_ap_graph, df_cap_graph = get_donnees_graph(df_tableau_buffer, df_apports, duree)

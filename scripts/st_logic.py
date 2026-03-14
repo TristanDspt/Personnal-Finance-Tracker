@@ -292,7 +292,7 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping):
     return perf
 
 
-def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
+def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
     """
     Construit le tableau mensuel du journal de bord.
     Retourne deux DataFrames :
@@ -304,7 +304,7 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
         df_histo (DataFrame): view_historique_portefeuille
         df_apports (DataFrame): view_apports_mensuels
         duree (str): valeur du slider
-        mapping (dict): {ptf_id: nom_enveloppe} — ex: {1: "ETF", 2: "ETF", 3: "STEF"}
+        mapping_ptf (dict): {ptf_id: nom_enveloppe} — ex: {1: "ETF", 2: "ETF", 3: "STEF"}
                         Les valeurs identiques permettent de regrouper plusieurs ptf sous une même colonne
 
     Returns:
@@ -320,7 +320,7 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
     df_apports = df_apports.copy()
 
     # Ajout de la colonne enveloppe pour le regroupement
-    df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping)
+    df_mensuel['Enveloppe'] = df_mensuel['ptf_id'].map(mapping_ptf)
 
     # Agrégation journalière par enveloppe
     df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
@@ -357,12 +357,12 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
     df_tableau = df_tableau.query("index >= @date_debut_tableau")
 
     # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
-    colonnes_ordre = list(dict.fromkeys(mapping.values())) + [
+    colonnes_ordre = list(dict.fromkeys(mapping_ptf.values())) + [
         'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Evo 12m (€)', 'Evo 12m (%)'
         ]
 
     # On n'affiche une enveloppe que si elle a des données non nulles
-    colonnes_enveloppes = set(mapping.values())
+    colonnes_enveloppes = set(mapping_ptf.values())
     tableau = []
     for c in colonnes_ordre:
         if c in colonnes_enveloppes:
@@ -399,7 +399,7 @@ def get_donnees_graph(df_tableau_buffer, df_apports, duree):
     Le buffer est indispensable pour calculer perf_graph via shift(1) sans perdre le 1er mois affiché.
 
     Args:
-        df_tableau_buffer (DataFrame): résultat de get_tableau_mensuel()[1] — trié croissant avec buffer
+        df_tableau_buffer (DataFrame): résultat de get_tableau_mensuel_ptf()[1] — trié croissant avec buffer
         df_apports (DataFrame): view_apports_mensuels brut (avec colonne 'mois')
         duree (str): valeur du slider
 
@@ -713,3 +713,99 @@ def get_tri_pdt(df, engine, liste_pdt):
         tri[pdt_id] = xirr(dates, flux) * 100
 
     return tri
+
+def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
+    """
+    Construit le tableau mensuel du journal de bord.
+    Retourne deux DataFrames :
+    - df_tableau : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
+    - df_tableau_buffer : version avec le mois de buffer nécessaire au calcul du graph
+                          (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
+
+    Args:
+        df_histo (DataFrame): view_historique_portefeuille
+        df_apports (DataFrame): view_apports_mensuels
+        duree (str): valeur du slider
+        mapping_pdt (dict): {pdt_id: nom_enveloppe} — ex: {1: "PEA", 2: "CTO", 3: "STEF"}
+                        Les valeurs identiques permettent de regrouper plusieurs ptf sous une même colonne
+
+    Returns:
+        tuple: (df_tableau, df_tableau_buffer)
+    """
+    nb_mois = get_nb_mois(duree)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    # Date de départ du tableau — inclut 1 mois de buffer pour permettre le calcul des évolutions m-1
+    date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
+
+    # Copies pour ne pas modifier les DataFrames originaux
+    df_mensuel = df_histo.copy()
+    df_apports = df_apports.copy()
+
+    # Ajout de la colonne enveloppe pour le regroupement
+    df_mensuel['Enveloppe'] = df_mensuel['pdt_id'].map(mapping_pdt)
+
+    # Agrégation journalière par enveloppe
+    df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
+                     .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
+                     .reset_index())
+
+    # Pivot mensuel : dernière valeur du mois par enveloppe
+    df_pivot = (df_journalier.groupby(['Enveloppe', pd.Grouper(key='jour', freq='ME')])
+                .agg({'capital_actuel': 'last', 'capital_investi': 'last'})
+                .unstack(level=0))
+
+    df_tableau = df_pivot['capital_actuel'].copy()
+
+    # --- Calcul des colonnes de performance ---
+    df_tableau['Total'] = df_tableau.sum(axis=1)
+    df_tableau['Evo Patrimoine'] = df_tableau['Total'].diff()
+    df_tableau['Evo (%)'] = (df_tableau['Evo Patrimoine'] / df_tableau['Total'].shift(1)) * 100
+
+    # Alignement des apports sur l'index mensuel du tableau
+    # La vue SQL retourne des dates avec timezone → on la vire proprement avant le reindex
+    df_apports['mois'] = df_apports['mois'].apply(lambda x: pd.Timestamp(x).replace(tzinfo=None).normalize())
+    df_apports = df_apports.set_index('mois')
+    injecte_mois = df_apports['injecte'].reindex(df_tableau.index, fill_value=0)
+
+    # Perf marchés = variation patrimoine - argent injecté ce mois
+    df_tableau['Perf Marchés (€)'] = df_tableau['Evo Patrimoine'] - injecte_mois
+
+    # Colonnes glissantes sur 12 mois (activées via toggle dans Home.py)
+    df_tableau['Evo 12m (€)'] = df_tableau['Total'] - df_tableau['Total'].shift(12)
+    df_tableau['Evo 12m (%)'] = (df_tableau['Evo 12m (€)'] / df_tableau['Total'].shift(12)) * 100
+
+    # --- Nettoyage ---
+    # Filtre sur la période sélectionnée
+    df_tableau = df_tableau.query("index >= @date_debut_tableau")
+
+    # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
+    colonnes_ordre = list(dict.fromkeys(mapping_pdt.values())) + [
+        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Evo 12m (€)', 'Evo 12m (%)'
+        ]
+
+    # On n'affiche une enveloppe que si elle a des données non nulles
+    colonnes_enveloppes = set(mapping_pdt.values())
+    tableau = []
+    for c in colonnes_ordre:
+        if c in colonnes_enveloppes:
+            if c in df_tableau.columns and df_tableau[c].notna().any() and df_tableau[c].sum() > 0:
+                tableau.append(c)
+        else:
+            if c in df_tableau.columns and df_tableau[c].notna().any():
+                tableau.append(c)
+
+    df_tableau = df_tableau[tableau]
+
+    # Buffer pour le graph : trié croissant, conserve le 1er mois
+    # (nécessaire pour que get_donnees_graph puisse calculer perf_graph via shift(1))
+    df_tableau_buffer = df_tableau.sort_index(ascending=True)
+
+    # Tableau d'affichage : tri décroissant + suppression du 1er mois (artefact du diff())
+    if nb_mois > 0:
+        df_tableau = df_tableau.iloc[1:].sort_index(ascending=False)
+    else:
+        df_tableau = df_tableau.sort_index(ascending=False)
+
+    df_tableau.index.name = 'Mois'
+
+    return df_tableau, df_tableau_buffer

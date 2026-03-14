@@ -128,7 +128,7 @@ mapping_tableau = {
     4: "CiC",
     6: "Livrets",
 }
-df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
 df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
 
