@@ -179,7 +179,7 @@ def confirmer_operation(p_id, p_date, p_qte, p_frais, p_type, p_prix, p_cat, p_n
     st.write(f"📅 *Date : {p_date}*")
     st.divider()
 
-    if st.button("Valider ✅", use_container_width=True, type='primary'):
+    if st.button("Valider ✅", width='stretch', type='primary'):
         # Connection à la DB
         with engine.begin() as conn:
         
@@ -228,7 +228,7 @@ st.divider()
 
 _, col_btn, _ = st.columns(3)
 with col_btn:
-    if st.button("Enregistrer l'opération 💾", use_container_width=True):
+    if st.button("Enregistrer l'opération 💾", width='stretch'):
         # 1. Initialisation par défaut (pour le Cash)
         id_cash_miroir = None
         
