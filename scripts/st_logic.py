@@ -357,7 +357,9 @@ def get_tableau_mensuel(df_histo, df_apports, duree, mapping):
     df_tableau = df_tableau.query("index >= @date_debut_tableau")
 
     # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
-    colonnes_ordre = list(dict.fromkeys(mapping.values())) + ['Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)']
+    colonnes_ordre = list(dict.fromkeys(mapping.values())) + [
+        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Evo 12m (€)', 'Evo 12m (%)'
+        ]
 
     # On n'affiche une enveloppe que si elle a des données non nulles
     colonnes_enveloppes = set(mapping.values())

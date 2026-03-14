@@ -242,9 +242,8 @@ mois_fr = {
 df_affichage = df_tableau.copy()
 
 # Colonnes 12m roulants — ajoutées uniquement si le toggle est activé
-if vue_12m:
-    df_affichage['Evo 12m (€)'] = df_affichage['Total'] - df_affichage['Total'].shift(-12)
-    df_affichage['Evo 12m (%)'] = (df_affichage['Evo 12m (€)'] / df_affichage['Total'].shift(-12)) * 100
+if not vue_12m:
+    df_affichage = df_affichage.drop(columns=['Evo 12m (€)', 'Evo 12m (%)'])
 
 # Traduction de l'index datetime en label lisible (ex: "Octobre 2025")
 df_affichage.index = df_affichage.index.map(lambda x: f"{mois_fr[x.month]} {x.year}")
