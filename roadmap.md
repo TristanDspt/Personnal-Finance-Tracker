@@ -13,7 +13,7 @@
 - **dash CTO** ⏳
 - **dash Stef** ⏳
 - **dash CiC** (quid du détails des 3 enveloppes ?) ⏳
-- **Refacto** Nettoyage de logic.py (fonction similaire à supprimer)
+- **Refacto** Nettoyage de logic.py (fonction similaire à supprimer, get_perf_etf et get_perf_etf_p -> get_perf_ptf et get_perf_pdt)
 
 ### 🔐 3. Sécurité & Cloud
 - ~~Choix de la techno BDD (PostgreSQL)~~ ✅
