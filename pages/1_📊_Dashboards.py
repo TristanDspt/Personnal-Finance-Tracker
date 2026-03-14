@@ -41,10 +41,11 @@ st.markdown("""
 
 engine = db.get_engine()
 
-# Les trois vues SQL sont la source de toutes les données de l'app
-df         = db.get_view("view_global_portefeuille", engine)      # snapshot instantané
-df_histo   = db.get_view("view_historique_portefeuille", engine)  # historique quotidien
-df_apports = db.get_view("view_apports_mensuels", engine)         # flux cash mensuels
+# Les vues SQL sont la source de toutes les données de l'app
+df             = db.get_view("view_global_portefeuille", engine)      # snapshot instantané
+df_histo       = db.get_view("view_historique_portefeuille", engine)  # historique quotidien
+df_apports     = db.get_view("view_apports_mensuels", engine)         # flux cash mensuels
+df_apports_pdt = db.get_view("view_apports_mensuels_pdt", engine)     # flux cash mensuels pas pdt_id
 
 
 # --- 3. SIDEBAR ---
@@ -130,7 +131,7 @@ match choix_global:
             )
 
 
-        with col3: st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        with col3: st.plotly_chart(fig, width='stretch', config={'displayModeBar': False})
 
         st.divider()
 
@@ -168,6 +169,18 @@ match choix_global:
                 value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
                 delta=f"{perf_ptf['CTO']['pct']:.0f} %"
             )
+
+        # GRAPHIQUES — (réactif au slider)
+
+        # Lineplot récap
+        df_apports = df_apports_pdt.query("pdt_id in (7, 8)").groupby('mois')['injecte'].sum().reset_index()
+        mapping_tableau = {1: "PEA", 2: "CTO"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+
+        if duree not in ("1 Mois", "Début Mois"):
+            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+            st.plotly_chart(fig_global, width='stretch')
 
 
 # DASH PEA
@@ -267,7 +280,18 @@ match choix_global:
                 value=f"{injecte:,.0f} €".replace(",", " "),
                 help="Somme des dépots sur la periode"
             )
+        
+        # GRAPHIQUES — (réactif au slider)
 
+        # Lineplot récap
+        df_apports = df_apports_pdt.query("pdt_id == 7")
+        mapping_tableau = {1: "PEA"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+
+        if duree not in ("1 Mois", "Début Mois"):
+            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+            st.plotly_chart(fig_global, width='stretch')
 
 # DASH CTO
 
@@ -362,6 +386,18 @@ match choix_global:
                 value=f"{injecte:,.0f} €".replace(",", " "),
                 help="Somme des dépots sur la periode"
             )
+
+        # GRAPHIQUES — (réactif au slider)
+
+        # Lineplot récap
+        df_apports = df_apports_pdt.query("pdt_id == 8")
+        mapping_tableau = {2: "CTO"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+
+        if duree not in ("1 Mois", "Début Mois"):
+            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+            st.plotly_chart(fig_global, width='stretch')
 
 
 # DASH STEF
@@ -463,6 +499,18 @@ match choix_global:
                 value=f"{bas:,.2f} €".replace(",", " "),
                 help=f"Cours le plus bas"
             )
+            
+        # GRAPHIQUES — (réactif au slider)
+
+        # Lineplot récap
+        df_apports = df_apports_pdt.query("pdt_id == 3")
+        mapping_tableau = {3: "STEF"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+
+        if duree not in ("1 Mois", "Début Mois"):
+            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+            st.plotly_chart(fig_global, width='stretch')
 
 
 # DASH CiC
@@ -525,7 +573,7 @@ match choix_global:
                 value=f"{abondement:,.0f} €".replace(",", " ")
             )
 
-        with col4: st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        with col4: st.plotly_chart(fig, width='stretch', config={'displayModeBar': False})
             
         st.divider()
 
@@ -602,6 +650,14 @@ match choix_global:
                 delta=f"{perf_pdt[6]['pct']:.0f} %"
             )
 
-df_debug = df.query("pdt_id == 5")
-print(df_debug[['capital_actuel', 'capital_investi', 'abondement_recu', 'profit_euro']])
-print(f"Calcul manuel : {df_debug['capital_actuel'].sum() - (df_debug['capital_investi'].sum() + df_debug['abondement_recu'].sum())}")
+        # GRAPHIQUES — (réactif au slider)
+
+        # Lineplot récap
+        df_apports = df_apports_pdt.query("pdt_id in (4, 5, 6, 9)").groupby('mois')['injecte'].sum().reset_index()
+        mapping_tableau = {4: "CiC"}
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+
+        if duree not in ("1 Mois", "Début Mois"):
+            fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
+            st.plotly_chart(fig_global, width='stretch')
