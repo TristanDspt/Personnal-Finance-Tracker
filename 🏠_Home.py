@@ -106,6 +106,7 @@ perf_marches = logic.get_perf_marches(df)
 df_etf       = df.query("ptf_id in (1, 2)")
 perf_etf     = logic.get_perf_marches(df_etf)
 poids        = logic.get_poids_enveloppes(df)
+tri_global   = logic.get_tri_ptf(df, engine, [1, 2, 3, 4])
 
 
 # --- 5. LOGIQUE TEMPORELLE (réactive au slider) ---
@@ -113,7 +114,6 @@ poids        = logic.get_poids_enveloppes(df)
 
 date_debut = logic.get_date_debut(duree)
 df_periode = logic.get_df_periode(df_histo, date_debut)
-perf_etf_p = logic.get_perf_etf_periode(df_histo, df_periode, date_debut, duree)
 # Mapping ptf_id → nom affiché
 mapping_ptf = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
 perf_ptf   = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
@@ -155,10 +155,9 @@ with col2:
     )
 with col3:
     st.metric(
-        label="Performance ETF",
-        value=f"{perf_etf['pct']:.0f} %",
-        delta=f"{perf_etf['euro']:,.0f} €".replace(",", " "),
-        help="Rendement des enveloppes ETF"
+        label="Performance Annualisée",
+        value=f"{tri_global:.0f} %",
+        help="TRI : conversion de la performance en base annuelle"
     )
 
 # DONUTS — Préparation des DataFrames filtrés par enveloppe
@@ -198,33 +197,28 @@ st.divider()
 # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
 st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
 
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4 = st.columns(4)
+
 
 with col1:
-    st.metric(
-        label="Performance ETF",
-        value=f"{perf_etf_p['euro']:,.0f} €".replace(",", " "),
-        delta=f"{perf_etf_p['pct']:.0f} %",
-    )
-with col2:
     st.metric(
         label="Performance PEA",
         value=f"{perf_ptf['PEA']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['PEA']['pct']:.0f} %"
     )
-with col3:
+with col2:
     st.metric(
         label="Performance CTO",
         value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['CTO']['pct']:.0f} %"
     )
-with col4:
+with col3:
     st.metric(
         label="Performance STEF",
         value=f"{perf_ptf['STEF']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['STEF']['pct']:.0f} %"
     )
-with col5:
+with col4:
     st.metric(
         label="Performance CiC",
         value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
