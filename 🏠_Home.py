@@ -188,9 +188,9 @@ fig_liv = charts.make_donuts(
 )
 
 col4, col5, col6 = st.columns(3)
-with col4: st.plotly_chart(fig_etf, use_container_width=True, config={'displayModeBar': False})
-with col5: st.plotly_chart(fig_pee, use_container_width=True, config={'displayModeBar': False})
-with col6: st.plotly_chart(fig_liv, use_container_width=True, config={'displayModeBar': False})
+with col4: st.plotly_chart(fig_etf, width='stretch', config={'displayModeBar': False})
+with col5: st.plotly_chart(fig_pee, width='stretch', config={'displayModeBar': False})
+with col6: st.plotly_chart(fig_liv, width='stretch', config={'displayModeBar': False})
 
 st.divider()
 
@@ -255,12 +255,12 @@ st.dataframe(
     df_affichage.style
     .format(format_filtre, na_rep='-', thousands=" ")
     # Coloration conditionnelle : rouge si négatif, vert si positif
-    .applymap(
+    .map(
         lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b',
         subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'] if c in df_affichage.columns]
     ),
     column_config={"Mois": st.column_config.Column(width=140)},
-    use_container_width=True,
+    width='stretch',
     height=min(35 * len(df_affichage) + 38, 458)  # hauteur dynamique selon le nombre de lignes
 )
 
@@ -269,4 +269,4 @@ st.divider()
 # GRAPHIQUE GLOBAL — masqué sur les courtes périodes (pas assez de points pour être lisible)
 if duree not in ("1 Mois", "Début Mois"):
     fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
-    st.plotly_chart(fig_global, use_container_width=True)
+    st.plotly_chart(fig_global, width='stretch')
