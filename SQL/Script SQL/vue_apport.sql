@@ -72,7 +72,9 @@ WHERE
     OR
     -- Versements PEE : APPORT volontaire + ABONDEMENT employeur
     -- ⚠️ Les mouvements PEE doivent être saisis en APPORT (pas ACHAT)
-    (pdt_cash = FALSE AND mvt_type_mouvement IN ('APPORT', 'ABONDEMENT'))
+    -- ⚠️ TRANSFERT inclus ici (contrairement à view_apports_mensuels) car à la granularité
+	-- pdt_id y'a pas de double comptage — chaque produit est regardé individuellement
+    (pdt_cash = FALSE AND mvt_type_mouvement IN ('APPORT', 'ABONDEMENT', 'TRANSFERT'))
     -- Type Vente : L'argent sort de la bourse pour aller dans ma poche
    	-- La perf marché ne doit pas etre impacté par un vente
     OR (pdt_cash = FALSE AND mvt_type_mouvement IN ('VENTE'))

@@ -44,8 +44,9 @@ engine = db.get_engine()
 # Les vues SQL sont la source de toutes les données de l'app
 df             = db.get_view("view_global_portefeuille", engine)      # snapshot instantané
 df_histo       = db.get_view("view_historique_portefeuille", engine)  # historique quotidien
+df_histo_pdt   = db.get_view("view_historique_pdt", engine)           # historique quotidien par pdt_id
 df_apports     = db.get_view("view_apports_mensuels", engine)         # flux cash mensuels
-df_apports_pdt = db.get_view("view_apports_mensuels_pdt", engine)     # flux cash mensuels pas pdt_id
+df_apports_pdt = db.get_view("view_apports_mensuels_pdt", engine)     # flux cash mensuels par pdt_id
 
 
 # --- 3. SIDEBAR ---
@@ -67,13 +68,14 @@ with st.sidebar:
     )
     # Toggle pour afficher les graphs détaillés sur le desh CiC
     if choix_global == "CiC":
-        vue_detail = st.toggle("Vue detaillée", value=False)
+        vue_detail = st.toggle("Vue détaillée", value=False)
 
 
 # --- 4. LOGIQUE TEMPORELLE ---
 
 date_debut = logic.get_date_debut(duree)
 df_periode = logic.get_df_periode(df_histo, date_debut)
+df_periode_pdt = logic.get_df_periode(df_histo_pdt, date_debut)
 
 
 # --- 5. INTERFACE GRAPHIQUE ---
@@ -579,7 +581,7 @@ match choix_global:
         st.divider()
 
         # KPIs GÉNÉRAUX — Capital total + perfs globales par ENVELOPPES (hors période)
-        perf_pdt_max = logic.get_perf_pdt_periode(df_histo, df_periode, duree='Max', date_debut=None, liste_pdt=[4, 5, 6])
+        perf_pdt_max = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree='Max', date_debut=None, liste_pdt=[4, 5, 6])
         tri_pdt = logic.get_tri_pdt(df, engine, [4, 5, 6])
 
         col5, col6, col7 = st.columns(3)
@@ -620,17 +622,16 @@ match choix_global:
         # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
         st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
     
-        mapping_ptf = {4: "CiC"}
-        perf_ptf = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
-        perf_pdt = logic.get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, [4, 5, 6])
+        perf_ptf = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, [4, 5, 6], aggregate=True)
+        perf_pdt = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, [4, 5, 6])
 
         col8, col9, col10, col11 = st.columns(4)
 
         with col8:
             st.metric(
                 label="Performance CiC",
-                value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
-                delta=f"{perf_ptf['CiC']['pct']:.0f} %"
+                value=f"{perf_ptf['euro']:,.0f} €".replace(",", " "),
+                delta=f"{perf_ptf['pct']:.0f} %"
             )
         with col9:
             st.metric(
@@ -660,17 +661,21 @@ match choix_global:
         df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
 
         # Lineplot detaillé
-        df_apports = df_apports_pdt.query("pdt_id in (4, 5, 6)").groupby('mois')['injecte'].sum().reset_index()
-        mapping_tableau = {4: "Obligation", 5: "Equilibre", 6: "Stratégie"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_tableau)
+        df_apports_obli = df_apports_pdt.query("pdt_id == 4").reset_index()
+        df_apports_equi = df_apports_pdt.query("pdt_id == 5").reset_index()
+        df_apports_strat = df_apports_pdt.query("pdt_id == 6").reset_index()
 
-        df_graph_oblig = df_tableau_buffer[['Obligation', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Obligation': 'Total'})
-        df_graph_equi = df_tableau_buffer[['Equilibre', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Equilibre': 'Total'})
-        df_graph_strat = df_tableau_buffer[['Stratégie', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Stratégie': 'Total'})
+        df_tableau_obli, df_tableau_buffer_obli = logic.get_tableau_mensuel_pdt(df_histo, df_apports_obli, duree, {4: "Obligation"})
+        df_tableau_equi, df_tableau_buffer_equi = logic.get_tableau_mensuel_pdt(df_histo, df_apports_equi, duree, {5: "Equilibre"})
+        df_tableau_strat, df_tableau_buffer_strat = logic.get_tableau_mensuel_pdt(df_histo, df_apports_strat, duree, {6: "Stratégie"})
 
-        df_apports_oblig, df_capital_oblig = logic.get_donnees_graph(df_graph_oblig, df_apports, duree)
-        df_apports_equil, df_capital_equil = logic.get_donnees_graph(df_graph_equi, df_apports, duree)
-        df_apports_strat, df_capital_strat = logic.get_donnees_graph(df_graph_strat, df_apports, duree)   
+        df_graph_obli = df_tableau_buffer_obli[['Obligation', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Obligation': 'Total'})
+        df_graph_equi = df_tableau_buffer_equi[['Equilibre', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Equilibre': 'Total'})
+        df_graph_strat = df_tableau_buffer_strat[['Stratégie', 'Evo Patrimoine', 'Perf Marchés (€)']].rename(columns={'Stratégie': 'Total'})
+
+        df_inj_obli, df_capital_obli = logic.get_donnees_graph(df_graph_obli, df_apports_obli, duree)
+        df_inj_equi, df_capital_equil = logic.get_donnees_graph(df_graph_equi, df_apports_equi, duree)
+        df_inj_strat, df_capital_strat = logic.get_donnees_graph(df_graph_strat, df_apports_strat, duree)   
 
         if duree not in ("1 Mois", "Début Mois"):
             if not vue_detail:
@@ -679,11 +684,11 @@ match choix_global:
             else:
                 cola, colb, colc = st.columns(3)
                 with cola:
-                    fig_global = charts.make_graph_global(df_apports_oblig, df_capital_oblig)
+                    fig_global = charts.make_graph_global(df_inj_obli, df_capital_obli, "Obligation")
                     st.plotly_chart(fig_global, width='stretch')
                 with colb:
-                    fig_global = charts.make_graph_global(df_apports_equil, df_capital_equil)
+                    fig_global = charts.make_graph_global(df_inj_equi, df_capital_equil, "Equilibre")
                     st.plotly_chart(fig_global, width='stretch')
                 with colc:
-                    fig_global = charts.make_graph_global(df_apports_strat, df_capital_strat)
+                    fig_global = charts.make_graph_global(df_inj_strat, df_capital_strat, "Stratégie")
                     st.plotly_chart(fig_global, width='stretch')

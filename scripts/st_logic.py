@@ -601,7 +601,7 @@ def get_tri_ptf(df, engine, liste_ptf):
     return tri * 100  # Converti en %
     
 
-def get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
+def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_pdt, aggregate=False):
     """
     Calcule la performance de chaque produit sur la période sélectionnée.
     Gère les cas spéciaux "Début Mois" et "Max".
@@ -610,22 +610,26 @@ def get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
     remonte avant le premier mouvement — on traite alors comme "Max" (profit total).
 
     Args:
-        df_histo (DataFrame): view_historique_portefeuille (complet, non filtré)
-        df_periode (DataFrame): df_histo filtré sur la période
+        df_histo_pdt (DataFrame): view_historique_portefeuille_pdt (complet, non filtré)
+        df_periode_pdt (DataFrame): df_histo_pdt filtré sur la période
         duree (str): valeur du slider
         date_debut (pd.Timestamp): date de début calculée par get_date_debut()
         liste_pdt (list): liste des pdt_id à inclure — ex: [4, 5, 6] pour CiC
+        aggregate (bool): si True, retourne un dict agrégé {euro, pct} au lieu du détail par pdt_id
+                          ⚠️ le % est recalculé sur la base totale, pas une moyenne des % individuels
 
     Returns:
-        dict: {pdt_id: {"euro": float, "pct": float}} — ex: {4: {"euro": 120.0, "pct": 3.5}}
+        dict: si aggregate=False → {pdt_id: {"euro": float, "pct": float}}
+              si aggregate=True  → {"euro": float, "pct": float}
     """
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
     perf = {}
+    total_base = 0
 
     for pdt_id in liste_pdt:
         # Agrégation journalière pour ce portefeuille sur la période
-        df_temp = (df_periode.query("pdt_id == @pdt_id")
+        df_temp = (df_periode_pdt.query("pdt_id == @pdt_id")
                    .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
                    .sum()
                    .reset_index()
@@ -637,7 +641,7 @@ def get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
 
             if duree == "Début Mois":
                 # Snapshot avant le 1er du mois dans l'historique complet
-                snap_debut = (df_histo.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
+                snap_debut = (df_histo_pdt.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
                               .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
                               .sum()
                               .reset_index()
@@ -656,12 +660,19 @@ def get_perf_pdt_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
 
             # Base = effort perso + abondement pour un calcul de ROI correct
             base = snap_fin['capital_investi'] + snap_fin['abondement_recu']
+            total_base += base
             pct = (euro / base * 100) if base > 0 else 0
         else:
             euro, pct = 0, 0
 
         perf[pdt_id] = {"euro": euro, "pct": pct}
 
+    if aggregate:
+        # somme euros + recalcul pct sur base totale
+        total_euro = sum(v['euro'] for v in perf.values())
+        pct = (total_euro / total_base * 100) if total_base > 0 else 0
+        return {"euro": total_euro, "pct": pct}
+    
     return perf
 
 def get_tri_pdt(df, engine, liste_pdt):
@@ -692,7 +703,7 @@ def get_tri_pdt(df, engine, liste_pdt):
                 mvt_date,
                 -(mvt_nb_parts * mvt_prix + mvt_frais) AS calcul
             FROM mouvement_mvt mvt
-            WHERE mvt_type_mouvement IN ('APPORT', 'ABONDEMENT')
+            WHERE mvt_type_mouvement IN ('APPORT', 'ABONDEMENT', 'TRANSFERT')
             AND pdt_id = %(pdt_id)s
         """
 

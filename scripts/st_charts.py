@@ -86,7 +86,7 @@ def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids=N
 
 # --- 2. GRAPH GLOBAL ---
 
-def make_graph_global(df_apports_graph, df_capital_graph):
+def make_graph_global(df_apports_graph, df_capital_graph, titre=None):
     """
     Crée le graphique principal de la Home : évolution du capital vs apports + perf marchés.
     Combine 2 axes Y : barres (perf %) à gauche, lignes (capital €) à droite.
@@ -96,6 +96,7 @@ def make_graph_global(df_apports_graph, df_capital_graph):
                                       doit contenir : index datetime, colonne 'cumsum'
         df_capital_graph (DataFrame): capital mensuel filtré sur la période
                                       doit contenir : index datetime, colonnes 'Total', 'delta', 'perf_graph'
+        titre (str, optional): titre affiché en haut du graphique. Default None.
 
     Returns:
         go.Figure: figure Plotly prête à être affichée avec st.plotly_chart()
@@ -162,5 +163,7 @@ def make_graph_global(df_apports_graph, df_capital_graph):
         hoverlabel=dict(font_size=15),
         separators=". "
     )
+    if titre:
+        graph_global.update_layout(title=titre)
 
     return graph_global
