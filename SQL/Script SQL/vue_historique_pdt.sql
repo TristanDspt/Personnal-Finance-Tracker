@@ -1,9 +1,9 @@
 -- ==========================================================
--- VUE : view_historique_portefeuille_pdt
+-- VUE : view_historique_pdt
 -- OBJECTIF : Reconstitution quotidienne de la valeur et de la performance par produits
 -- ==========================================================
 
-CREATE OR REPLACE VIEW view_historique_portefeuille_pdt AS
+CREATE OR REPLACE VIEW view_historique_pdt AS
 WITH date_range AS (
     -- 1. Génère un calendrier complet du premier mouvement à aujourd'hui
     -- Cela permet de ne pas avoir de "trous" dans les graphiques
@@ -46,7 +46,7 @@ mouvements_cumules AS (
                           THEN (mvt.mvt_nb_parts * mvt.mvt_prix) ELSE 0 END), 0) as abondement_jour,
 
         -- Variables pour le calcul du profit historique (flux entrants vs sortants)
-        COALESCE(SUM(CASE WHEN mvt.mvt_nb_parts > 0 AND mvt.mvt_type_mouvement NOT IN ('TRANSFERT') THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais ELSE 0 END), 0) as investi_brut_jour,
+        COALESCE(SUM(CASE WHEN mvt.mvt_nb_parts > 0 THEN (mvt.mvt_nb_parts * mvt.mvt_prix) + mvt.mvt_frais ELSE 0 END), 0) as investi_brut_jour,
         COALESCE(SUM(CASE WHEN mvt.mvt_nb_parts < 0 THEN ABS(mvt.mvt_nb_parts * mvt.mvt_prix) ELSE 0 END), 0) as encaisse_jour
     FROM grille_vide gv
     LEFT JOIN public.mouvement_mvt mvt ON gv.jour = mvt.mvt_date AND gv.pdt_id = mvt.pdt_id
