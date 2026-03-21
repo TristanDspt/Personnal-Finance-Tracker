@@ -7,14 +7,16 @@
 - ~~**Graphiques** : progression globale (comparé à l'attendu : similaire à celui d'excel) + le Match "Perf Réelle" vs "Injections" ?~~ ✅
 
 ### 📊 2. Page Dashboards
-- **Idées graphiques** : Waterfall (perf / perf totale) / (capital / captital total). Hors livrets ? ⏳
-- **dash ETF** (qui regroupe les deux ETF) ? ⏳
-- **dash PEA** ⏳
-- **dash CTO** ⏳
-- **dash Stef** ⏳
-- **dash CiC** (quid du détails des 3 enveloppes ?) ⏳
-- **Graph dashboards** : premier mois sans data (NaN sur diff) — premier mois manquant sur période > 01/2024
+- ~~**dash ETF**~~ (qui regroupe les deux ETF) ? ✅
+- ~~**dash PEA**~~ ✅
+- ~~**dash CTO**~~ ✅
+- ~~**dash Stef**~~ ✅
+- ~~**dash CiC** (quid du détails des 3 enveloppes ?)~~ ✅
+- **Graph dashboards** : premier mois sans data (NaN sur diff) — premier mois manquant sur période > 01/2024. ⏳
 - **Refacto** Nettoyage de logic.py (fonction similaire à supprimer, get_perf_etf et get_perf_etf_p -> get_perf_ptf et get_perf_pdt) ⏳
+
+### 🔪 2.5 Modif
+- **Deplacer le bouton MAJ PEE** : Passer le bouton dans la page de saisie : plus logique. ⏳
 
 ### 🔐 3. Sécurité & Cloud
 - ~~Choix de la techno BDD (PostgreSQL)~~ ✅
@@ -25,9 +27,6 @@
 - **BDD Fake** : Ajoute de fake data à des fins de présentation. ⏳
 
 ### 💡 4. Autres idées à venir
-- **Compartif des placements** : Pour mettre dos à dos les perfs ? ⏳
-- **Page Bourse** : Page dédiée uniquement aux perf des produits boursier, nécéssite refonte graphique complete de la home page. (evolution de la perf marchés ?) ⏳
-- **Historique des cours** : 📈 Pour chaque placements actif. (full groupé ou radio ?) ⏳
 - **Projection à 10 ans** (intérêts composés basés sur la perf réelle). ⏳
 - **Virements Automatiques** : création d'une ligne le 2 du mois pour le PEA et le CTO dans la DB. ⏳
 
