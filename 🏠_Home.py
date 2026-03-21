@@ -94,9 +94,10 @@ date_debut     = logic.get_date_debut(duree)
 df_periode     = logic.get_df_periode(df_histo, date_debut)
 df_periode_pdt = logic.get_df_periode(df_histo_pdt, date_debut)
 # Mapping ptf_id → nom affiché
-mapping_ptf  = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
+mapping_ptf  = {1: "PEA", 2: "CTO", 3: "STEF"}
 perf_ptf     = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
 perf_globale = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, [1,2,3,4,5,6], aggregate=True)
+perf_cic     = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, [4, 5, 6], aggregate=True)
 
 # Le tableau doit être calculé avant le graph — get_donnees_graph dépend de df_tableau_buffer
 # df_tableau_buffer : version avec mois de buffer, pour le calcul de perf_graph via shift(1)
@@ -206,8 +207,8 @@ with col4:
 with col5:
     st.metric(
         label="Performance CiC",
-        value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),
-        delta=f"{perf_ptf['CiC']['pct']:.0f} %"
+        value=f"{perf_cic['euro']:,.0f} €".replace(",", " "),
+        delta=f"{perf_cic['pct']:.0f} %"
     )
 
 # TABLEAU MENSUEL
