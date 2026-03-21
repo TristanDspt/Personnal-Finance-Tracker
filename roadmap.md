@@ -13,7 +13,7 @@
 - ~~**dash Stef**~~ ✅
 - ~~**dash CiC** (quid du détails des 3 enveloppes ?)~~ ✅
 - **Graph dashboards** : premier mois sans data (NaN sur diff) — premier mois manquant sur période > 01/2024. ⏳
-- **Refacto** Nettoyage de logic.py (fonction similaire à supprimer, get_perf_etf et get_perf_etf_p -> get_perf_ptf et get_perf_pdt) ⏳
+- **Refacto** Nettoyage de logic.py (fonction similaire à supprimer, get_perf_etf et get_perf_etf_p -> get_perf_ptf et get_perf_pdt) -> remplacer toutes les fct ptf par des pdt plus souples. ⏳
 
 ### 🔪 2.5 Modif
 - **Deplacer le bouton MAJ PEE** : Passer le bouton dans la page de saisie : plus logique. ⏳
