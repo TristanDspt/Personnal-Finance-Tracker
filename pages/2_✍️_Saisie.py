@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
+import subprocess
 import scripts.database as db
 import time
 import sys
@@ -62,8 +63,33 @@ liste_types_titres = ["Achat", "Vente", "Ajustement", "Abondement", "Dividende"]
 st.markdown("<h1 style='text-align: center;'>✍️ Saisie</h2>", unsafe_allow_html=True)
 st.divider() # Un petit trait pour séparer proprement
 
-# CHOIX DU TYPE
-choix_global = st.sidebar.radio("Catégorie", ["💸 Flux Cash", "📈 Titres"])
+# MENU
+with st.sidebar:
+    st.title("⚙️ Menu")
+
+    choix_global = st.sidebar.radio("", ["💸 Flux Cash", "📈 Titres"])
+
+    st.divider()
+
+    # Bouton de mise à jour manuelle des fonds PEE (lance update_pee.py en subprocess)
+    if st.button("🔄 MAJ PEE"):
+        result = subprocess.run(
+            [st.secrets["venv_python"], r"scripts\update_pee.py"],
+            capture_output=True, text=True
+        )
+        st.cache_data.clear()
+        if result.stderr:
+            st.error("⚠️ Erreur !")
+            st.text(result.stderr)
+        elif "non trouvé" in result.stdout:
+            st.warning("⚠️ Fichiers absents...")
+            st.text(result.stdout)
+        else:
+            st.success("🚀 Données envoyées !")
+            st.text(result.stdout)
+        time.sleep(8)
+        st.rerun()
+    st.caption("⚠️ Télécharger CSV avant MAJ")
 
 # CASH
 if choix_global == "💸 Flux Cash":

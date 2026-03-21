@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import subprocess
 import time
 import scripts.database as db
 import scripts.st_logic as logic
@@ -74,28 +73,6 @@ with st.sidebar:
     )
     # Toggle pour afficher les colonnes d'évolution sur 12 mois glissants dans le tableau
     vue_12m = st.toggle("12 mois roulants", value=False)
-
-    st.divider()
-
-    # Bouton de mise à jour manuelle des fonds PEE (lance update_pee.py en subprocess)
-    if st.button("🔄 MAJ PEE"):
-        result = subprocess.run(
-            [st.secrets["venv_python"], r"scripts\update_pee.py"],
-            capture_output=True, text=True
-        )
-        st.cache_data.clear()
-        if result.stderr:
-            st.error("⚠️ Erreur !")
-            st.text(result.stderr)
-        elif "non trouvé" in result.stdout:
-            st.warning("⚠️ Fichiers absents...")
-            st.text(result.stdout)
-        else:
-            st.success("🚀 Données envoyées !")
-            st.text(result.stdout)
-        time.sleep(8)
-        st.rerun()
-    st.caption("Télécharger les CSV avant la maj")
 
 
 # --- 4. CALCULS GÉNÉRAUX (indépendants de la période) ---
