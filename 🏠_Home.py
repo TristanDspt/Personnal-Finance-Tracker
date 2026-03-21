@@ -42,10 +42,11 @@ st.markdown("""
 
 engine = db.get_engine()
 
-# Les trois vues SQL sont la source de toutes les données de l'app
-df         = db.get_view("view_global_portefeuille", engine)      # snapshot instantané
-df_histo   = db.get_view("view_historique_portefeuille", engine)  # historique quotidien
-df_apports = db.get_view("view_apports_mensuels", engine)         # flux cash mensuels
+# Les quatre vues SQL sont la source de toutes les données de l'app
+df             = db.get_view("view_global_portefeuille", engine)      # snapshot instantané
+df_histo       = db.get_view("view_historique_portefeuille", engine)  # historique quotidien par ptf_id
+df_histo_pdt   = db.get_view("view_historique_pdt", engine)           # historique quotidien par pdt_id
+df_apports     = db.get_view("view_apports_mensuels", engine)         # flux cash mensuels
 
 
 # --- 3. SIDEBAR ---
@@ -89,11 +90,13 @@ tri_global   = logic.get_tri_ptf(df, engine, [1, 2, 3, 4])
 # --- 5. LOGIQUE TEMPORELLE (réactive au slider) ---
 # Ces valeurs sont recalculées à chaque changement de période
 
-date_debut = logic.get_date_debut(duree)
-df_periode = logic.get_df_periode(df_histo, date_debut)
+date_debut     = logic.get_date_debut(duree)
+df_periode     = logic.get_df_periode(df_histo, date_debut)
+df_periode_pdt = logic.get_df_periode(df_histo_pdt, date_debut)
 # Mapping ptf_id → nom affiché
-mapping_ptf = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
-perf_ptf   = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+mapping_ptf  = {1: "PEA", 2: "CTO", 3: "STEF", 4: "CiC"}
+perf_ptf     = logic.get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping_ptf)
+perf_globale = logic.get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, [1,2,3,4,5,6], aggregate=True)
 
 # Le tableau doit être calculé avant le graph — get_donnees_graph dépend de df_tableau_buffer
 # df_tableau_buffer : version avec mois de buffer, pour le calcul de perf_graph via shift(1)
@@ -174,28 +177,33 @@ st.divider()
 # JOURNAL DE BORD — KPIs par enveloppe sur la période sélectionnée (réactif au slider)
 st.markdown(f"<h4 style='text-align: center; margin-top: -20px; margin-bottom: 15px;'>📅 Journal de bord : {duree}</h4>", unsafe_allow_html=True)
 
-col1, col2, col3, col4 = st.columns(4)
-
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
+    st.metric(
+        label="Performance Globale",
+        value=f"{perf_globale['euro']:,.0f} €".replace(",", " "),
+        delta=f"{perf_globale['pct']:.0f} %"
+    )
+with col2:
     st.metric(
         label="Performance PEA",
         value=f"{perf_ptf['PEA']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['PEA']['pct']:.0f} %"
     )
-with col2:
+with col3:
     st.metric(
         label="Performance CTO",
         value=f"{perf_ptf['CTO']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['CTO']['pct']:.0f} %"
     )
-with col3:
+with col4:
     st.metric(
         label="Performance STEF",
         value=f"{perf_ptf['STEF']['euro']:,.0f} €".replace(",", " "),
         delta=f"{perf_ptf['STEF']['pct']:.0f} %"
     )
-with col4:
+with col5:
     st.metric(
         label="Performance CiC",
         value=f"{perf_ptf['CiC']['euro']:,.0f} €".replace(",", " "),

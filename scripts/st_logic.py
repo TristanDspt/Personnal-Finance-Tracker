@@ -628,7 +628,7 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
     total_base = 0
 
     for pdt_id in liste_pdt:
-        # Agrégation journalière pour ce portefeuille sur la période
+        # Agrégation journalière pour ce produit sur la période
         df_temp = (df_periode_pdt.query("pdt_id == @pdt_id")
                    .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
                    .sum()
