@@ -264,8 +264,6 @@ st.dataframe(
     height=min(35 * len(df_affichage) + 38, 458)  # hauteur dynamique selon le nombre de lignes
 )
 
-st.divider()
-
 # GRAPHIQUE GLOBAL — masqué sur les courtes périodes (pas assez de points pour être lisible)
 if duree not in ("1 Mois", "Début Mois"):
     fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
