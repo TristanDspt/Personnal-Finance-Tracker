@@ -55,7 +55,7 @@ with st.sidebar:
     st.title("⚙️ Menu")
 
     # Choix de l'enveloppe
-    choix_global = st.sidebar.radio("", ["ETF", "PEA", "CTO", "STEF", "CiC"])
+    choix_global = st.sidebar.radio("Menu", ["ETF", "PEA", "CTO", "STEF", "CiC"], label_visibility="collapsed")
 
     st.divider()
 
