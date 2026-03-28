@@ -19,7 +19,7 @@ scripts/imports/
 explo.ipynb
 .vscode/
 dash_pft.pbix
-images/
+docs/
 
 # --- RUN ---
 # On ignore les fichiers de lancement (optionnel, mais propre)
