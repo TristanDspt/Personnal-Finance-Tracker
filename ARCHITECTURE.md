@@ -11,13 +11,13 @@ La logique est **strictement séparée** de l'affichage :
 ```
 PostgreSQL (Vues SQL)
         ↓
-scripts/database.py   ← connexion + chargement des vues
+dashboard/components/database.py   ← connexion + chargement des vues
         ↓
-   st_logic.py        ← calculs, transformations pandas
-   st_charts.py       ← figures Plotly
+   dashboard/components/st_logic.py        ← calculs, transformations pandas
+   dashboard/components/st_charts.py       ← figures Plotly
         ↓
-     Home.py          ← interface principale
-   pages/Dashboards   ← interfaces secondaires
+     dashboard/app.py               ← point d'entrée Streamlit
+   dashboard/pages/                 ← pages secondaires
 ```
 
 ---
@@ -26,12 +26,50 @@ scripts/database.py   ← connexion + chargement des vues
 
 | Fichier | Rôle |
 | :--- | :--- |
-| `scripts/database.py` | Connexion PostgreSQL + chargement des vues SQL en DataFrame |
-| `scripts/st_logic.py` | Toute la logique métier (calculs, transformations) — zéro Streamlit |
-| `scripts/st_charts.py` | Toutes les figures Plotly (Home + Dashboards) |
-| `Home.py` | Page principale : appels des fonctions + affichage Streamlit |
-| `pages/1_📊_Dashboards.py` | Dashboards par enveloppe |
-| `pages/2_✍️_Saisie.py` | Formulaire de saisie des mouvements |
+| `dashboard/app.py` | Point d'entrée Streamlit |
+| `dashboard/components/database.py` | Connexion PostgreSQL + chargement des vues SQL en DataFrame |
+| `dashboard/components/st_logic.py` | Toute la logique métier (calculs, transformations) — zéro Streamlit |
+| `dashboard/components/st_charts.py` | Toutes les figures Plotly (KPIs + Dashboards) |
+| `dashboard/pages/1_📊_KPIs.py` | Page KPIs globaux |
+| `dashboard/pages/2_📈_Dashboards.py` | Dashboards par enveloppe |
+| `dashboard/pages/3_🧾_Saisie.py` | Formulaire de saisie des mouvements |
+| `scripts/` | ETL : scripts de mise à jour des données (update_pee.py, etc.) |
+| `sql/` | Scripts SQL (schéma, vues) |
+
+---
+
+## 📁 Structure du Projet
+
+```
+├── dashboard/
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── database.py        ← Connexion PostgreSQL + chargement vues
+│   │   ├── st_logic.py        ← Logique métier (calculs pandas)
+│   │   └── st_charts.py       ← Figures Plotly
+│   ├── pages/
+│   │   ├── 1_📊_KPIs.py       ← KPIs globaux
+│   │   ├── 2_📈_Dashboards.py ← Dashboards par enveloppe
+│   │   └── 3_🧾_Saisie.py     ← Formulaire de saisie
+│   ├── __init__.py
+│   └── app.py                 ← Point d'entrée Streamlit
+├── scripts/
+│   ├── config.py              ← Paramètres DB (exclu du repo)
+│   ├── update_pee.py          ← ETL mise à jour fonds PEE
+│   ├── update_price.py        ← ETL mise à jour cours boursiers
+│   └── imports/               ← Notebooks d'import historique
+├── sql/
+│   ├── schema/                ← Schéma DB (architect)
+│   └── Script SQL/            ← Scripts de création et vues
+├── docs/                      ← Assets visuels
+├── run/                       ← Scripts de lancement
+├── .streamlit/
+│   └── secrets.toml           ← Secrets DB (exclu du repo)
+├── ARCHITECTURE.md
+├── roadmap.md
+├── requirements.txt
+└── .gitignore
+```
 
 ---
 
@@ -40,7 +78,8 @@ scripts/database.py   ← connexion + chargement des vues
 | Vue | Contenu |
 | :--- | :--- |
 | `view_global_portefeuille` | État instantané : capital, profit €/%, PRU par produit |
-| `view_historique_portefeuille` | Reconstitution quotidienne du patrimoine (base des graphiques) |
+| `view_historique_portefeuille` | Reconstitution quotidienne du patrimoine par ptf_id (base des graphiques) |
+| `view_historique_pdt` | Reconstitution quotidienne du patrimoine par pdt_id (dashboards détaillés) |
 | `view_apports_mensuels` | Flux d'argent réels entrant/sortant par mois |
 | `view_positions_actuelles` | Quantités détenues par produit |
 | `view_pru` | Prix de revient unitaire par produit |
@@ -107,7 +146,7 @@ scripts/database.py   ← connexion + chargement des vues
 > ⚠️ `get_perf_etf_periode`, `get_perf_ptf_periode`, `get_perf_pdt_periode`, `get_injecte_periode` :
 > Si `snap_debut['jour'] > date_debut`, la période remonte avant le 1er mouvement → traité comme "Max" (valeur totale).
 
-> ⚠️ `get_perf_etf_periode` : présente dans `st_logic.py` mais **non appelée dans Home.py**. Disponible pour Dashboards si besoin.
+> ⚠️ `get_perf_etf_periode` : présente dans `st_logic.py` mais **non appelée dans les pages**. Disponible si besoin.
 
 ---
 
@@ -123,7 +162,7 @@ scripts/database.py   ← connexion + chargement des vues
 
 ---
 
-## Ordre d'appel dans Home.py
+## Ordre d'appel dans KPIs.py
 ```python
 # 1. Chargement des vues
 df, df_histo, df_apports = ...

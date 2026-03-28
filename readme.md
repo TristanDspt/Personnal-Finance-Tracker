@@ -39,7 +39,7 @@ L'objectif est de transformer un suivi manuel fastidieux en une application auto
 - **Automatique :** Script Python via `yfinance` pour les actifs boursiers
 - **Semi-automatique :** Parsing Excel/CSV pour les fonds PEE (STEF, CiC)
 - **Incrémentation logique :** Comparaison des dates en base pour n'importer que les nouvelles cotations
-- **MAJ manuelle PEE :** Bouton dans la sidebar déclenche `update_pee.py` via subprocess
+- **MAJ manuelle PEE :** Bouton dans la page Saisie déclenche `update_pee.py` via subprocess
 
 ### 2. Intelligence SQL (Business Logic)
 La logique financière est déportée au maximum dans des **Vues SQL** :
@@ -48,7 +48,7 @@ La logique financière est déportée au maximum dans des **Vues SQL** :
 - **Vue globale :** Synthèse instantanée capital, profit €/%, dernière cotation par produit
 - **Vue historique :** Reconstitution quotidienne du patrimoine (base de tous les graphiques)
 
-### 3. Dashboard Home
+### 3. Page KPIs
 - KPIs globaux : Patrimoine total, Performance Marchés, TRI annualisé (hors livrets)
 - 3 Donuts : répartition ETF / PEE / Livrets avec poids %
 - Journal de bord réactif au slider : perf par enveloppe sur la période
@@ -77,14 +77,15 @@ Chaque enveloppe dispose d'un dashboard dédié avec KPIs, TRI, capital net fisc
 ```
 PostgreSQL (Vues SQL)
         ↓
-scripts/database.py   ← connexion + chargement des vues
+dashboard/components/database.py   ← connexion + chargement des vues
         ↓
-   st_logic.py        ← calculs, transformations pandas (zéro Streamlit)
-   st_charts.py       ← figures Plotly (zéro Streamlit)
+   dashboard/components/st_logic.py    ← calculs, transformations pandas (zéro Streamlit)
+   dashboard/components/st_charts.py   ← figures Plotly (zéro Streamlit)
         ↓
-     Home.py          ← interface principale
-   pages/Dashboards   ← dashboards par enveloppe
-   pages/Saisie       ← formulaire de saisie
+     dashboard/app.py              ← point d'entrée Streamlit
+   dashboard/pages/KPIs            ← KPIs globaux
+   dashboard/pages/Dashboards      ← dashboards par enveloppe
+   dashboard/pages/Saisie          ← formulaire de saisie
 ```
 
 Voir `ARCHITECTURE.md` pour le détail complet des fonctions et des ordres d'appel.
@@ -126,10 +127,10 @@ Contraintes : clés étrangères, unicité Ticker/Date, checks Prix > 0.
 1. Cloner le repo
 2. Créer et activer un venv : `python -m venv pft_env`
 3. Installer les dépendances : `pip install -r requirements.txt`
-4. Initialiser la DB : `psql -f SQL/schema/Create_DB_PFT.sql`
-5. Créer le fichier `config.py` à la racine (voir section Sécurité)
+4. Initialiser la DB : `psql -f sql/schema/Create_DB_PFT.sql`
+5. Créer le fichier `scripts/config.py` (voir section Sécurité)
 6. Créer `.streamlit/secrets.toml` (voir section Sécurité)
-7. Lancer l'application : `streamlit run Home.py`
+7. Lancer l'application : `streamlit run dashboard/app.py`
 
 ---
 
@@ -137,7 +138,7 @@ Contraintes : clés étrangères, unicité Ticker/Date, checks Prix > 0.
 
 Deux fichiers à créer manuellement (exclus du repo via `.gitignore`) :
 
-**`config.py`** (utilisé par les scripts ETL) :
+**`scripts/config.py`** (utilisé par les scripts ETL) :
 ```python
 DB_HOST     = "localhost"
 DB_PORT     = "5432"
@@ -163,17 +164,30 @@ venv_python = "C:/path/to/venv/Scripts/python.exe"
 ## 📁 Structure du Projet
 
 ```
-├── Home.py                    ← Page principale Streamlit
-├── pages/
-│   ├── 1_📊_Dashboards.py    ← Dashboards par enveloppe
-│   └── 2_✍️_Saisie.py        ← Formulaire de saisie
+├── dashboard/
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── database.py        ← Connexion PostgreSQL + chargement vues
+│   │   ├── st_logic.py        ← Logique métier (calculs pandas)
+│   │   └── st_charts.py       ← Figures Plotly
+│   ├── pages/
+│   │   ├── 1_📊_KPIs.py       ← KPIs globaux
+│   │   ├── 2_📈_Dashboards.py ← Dashboards par enveloppe
+│   │   └── 3_🧾_Saisie.py     ← Formulaire de saisie
+│   ├── __init__.py
+│   └── app.py                 ← Point d'entrée Streamlit
 ├── scripts/
-│   ├── database.py            ← Connexion PostgreSQL + chargement vues
-│   ├── st_logic.py            ← Logique métier (calculs pandas)
-│   ├── st_charts.py           ← Figures Plotly
-│   └── update_pee.py          ← ETL mise à jour fonds PEE
-├── SQL/
-│   └── schema/                ← Scripts de création DB
+│   ├── config.py              ← Paramètres DB (exclu du repo)
+│   ├── update_pee.py          ← ETL mise à jour fonds PEE
+│   ├── update_price.py        ← ETL mise à jour cours boursiers
+│   └── imports/               ← Notebooks d'import historique
+├── sql/
+│   ├── schema/                ← Schéma DB
+│   └── Script SQL/            ← Scripts de création et vues
+├── docs/                      ← Assets visuels
+├── run/                       ← Scripts de lancement
+├── .streamlit/
+│   └── secrets.toml           ← Secrets DB (exclu du repo)
 ├── ARCHITECTURE.md            ← Documentation technique détaillée
 ├── roadmap.md                 ← Roadmap et backlog
 └── requirements.txt
