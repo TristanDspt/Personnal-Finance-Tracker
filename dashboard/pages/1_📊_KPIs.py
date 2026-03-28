@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import time
-import scripts.database as db
-import scripts.st_logic as logic
-import scripts.st_charts as charts
+import dashboard.components.database as db
+import dashboard.components.st_logic as logic
+import dashboard.components.st_charts as charts
 
 # =============================================================================
 # Home.py

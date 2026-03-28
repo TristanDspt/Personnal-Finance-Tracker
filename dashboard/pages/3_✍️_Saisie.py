@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 import subprocess
-import scripts.database as db
+import dashboard.components.database as db
 import time
 import sys
 import os
