@@ -1,9 +1,7 @@
 import streamlit as st
-import pandas as pd
-import time
-import dashboard.components.database as db
-import dashboard.components.st_logic as logic
-import dashboard.components.st_charts as charts
+import components.database as db
+import components.st_logic as logic
+import components.st_charts as charts
 
 # =============================================================================
 # Home.py
@@ -30,9 +28,15 @@ st.markdown("""
     [data-testid="stMetricLabel"] {
         justify-content: center;
         width: 100%;
+        min-height: 2rem;
+        display: flex;
+        align-items: flex-end;
     }
     [data-testid="stMetricValue"] {
         width: 100%;
+    }
+    [data-testid="stMetricDelta"] {
+    justify-content: center;
     }
     </style>
     """, unsafe_allow_html=True)

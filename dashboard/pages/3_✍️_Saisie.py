@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 import subprocess
-import dashboard.components.database as db
+import components.database as db
 import time
 import sys
 import os
