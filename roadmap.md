@@ -13,7 +13,6 @@
 - [x] **Dash STEF**
 - [x] **Dash CiC** (vue globale + vue détaillée 3 fonds)
 - [ ] **Graph dashboards** : premier mois sans data (NaN sur diff) ⏳
-- [ ] **Refacto** `st_logic.py` : remplacer toutes les fonctions `ptf` par des fonctions `pdt` plus souples ⏳
 
 ### 🔧 3. Modifications
 - [x] **Déplacer le bouton MAJ PEE** vers la page Saisie
