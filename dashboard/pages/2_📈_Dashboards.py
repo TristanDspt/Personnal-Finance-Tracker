@@ -686,13 +686,13 @@ match choix_global:
                 fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
                 st.plotly_chart(fig_global, width='stretch')
             else:
-                cola, colb, colc = st.columns(3)
-                with cola:
-                    fig_global = charts.make_graph_global(df_inj_obli, df_capital_obli, "Obligation")
+                tab1, tab2, tab3 = st.tabs(["Obligation", "Equilibre", "Stratégie"])
+                with tab1:
+                    fig_global = charts.make_graph_global(df_inj_obli, df_capital_obli)
                     st.plotly_chart(fig_global, width='stretch')
-                with colb:
-                    fig_global = charts.make_graph_global(df_inj_equi, df_capital_equil, "Equilibre")
+                with tab2:
+                    fig_global = charts.make_graph_global(df_inj_equi, df_capital_equil)
                     st.plotly_chart(fig_global, width='stretch')
-                with colc:
-                    fig_global = charts.make_graph_global(df_inj_strat, df_capital_strat, "Stratégie")
+                with tab3:
+                    fig_global = charts.make_graph_global(df_inj_strat, df_capital_strat)
                     st.plotly_chart(fig_global, width='stretch')
