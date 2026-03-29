@@ -13,9 +13,14 @@ from pyxirr import xirr
 # PDT: 1 : S&P500 | 2 : Gold | 3 : Action STEF | 4 : Oblig CiC | 5 : Equi CiC | 6 : Strat CiC | 7 : Cash Bourso | 8 : Cash TR | 10 : Livret A | 11 : LEP
 
 
-# --- 1. CALCULS GENERAUX ---
-# Fonctions de synthèse globale, indépendantes de la période sélectionnée.
-# Toutes basées sur df (view_global_portefeuille).
+PTF_TO_PDT = {
+    1: [1, 7],
+    2: [2, 8],
+    3: [3],
+    4: [4, 5, 6, 9],
+    6: [10, 11],
+}
+
 
 def get_patrimoine_total(df):
     """
@@ -87,9 +92,6 @@ def get_poids_enveloppes(df):
     return {"etf": poids_etf, "pee": poids_pee, "livret": poids_livret}
 
 
-# --- 2. LOGIQUE TEMPORELLE ---
-# Fonctions liées au slider de période et aux calculs de performance sur une période donnée.
-
 def get_nb_mois(duree):
     """
     Convertit le label du slider en nombre de mois.
@@ -141,6 +143,9 @@ def get_date_debut(duree):
     if nb_mois > 0:
         # Cas normal : on recule de nb_mois à partir d'aujourd'hui
         date_debut = pd.Timestamp.now() - pd.DateOffset(months=nb_mois)
+        # Cas "15 jours" : on recule de 15j à partir d'aujourd'hui
+    elif duree == "15 Jours":
+        date_debut = pd.Timestamp.now() - pd.DateOffset(days=15)
     else:
         # Cas "Début Mois" : on repart du 1er du mois en cours
         date_debut = debut_mois_actuel

@@ -73,7 +73,7 @@ with st.sidebar:
     st.subheader("🛠️ Configuration")
     duree = st.select_slider(
         "Période d'analyse",
-        options=["Début Mois", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
+        options=["Début Mois", "15 Jours", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
         value="6 Mois"
     )
     # Toggle pour afficher les colonnes d'évolution sur 12 mois glissants dans le tableau
@@ -255,6 +255,6 @@ st.dataframe(
 )
 
 # GRAPHIQUE GLOBAL — masqué sur les courtes périodes (pas assez de points pour être lisible)
-if duree not in ("1 Mois", "Début Mois"):
+if duree not in ("1 Mois", "15 Jours", "Début Mois"):
     fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
     st.plotly_chart(fig_global, width='stretch')
