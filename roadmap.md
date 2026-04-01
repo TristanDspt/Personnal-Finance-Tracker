@@ -21,6 +21,7 @@
 ### 🔐 4. Sécurité & Cloud
 - [x] Choix de la techno BDD (PostgreSQL)
 - [x] Gestion des Secrets (`st.secrets` & `config.py` non publics)
+- [ ] **API** : FastAPI ⏳
 - [ ] **Migration Cloud** : PostgreSQL local → Supabase ⏳
 - [ ] **Authentification** : login pour sécuriser l'accès en ligne ⏳
 - [ ] **BDD Fake** : fake data à des fins de présentation ⏳
