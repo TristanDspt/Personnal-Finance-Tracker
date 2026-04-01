@@ -195,11 +195,11 @@ def get_perf_etf_periode(df_histo, df_periode, date_debut, duree):
 
     # Agrégation journalière des deux ETF sur la période
     df_etf_periode = (df_periode.query("ptf_id in [1, 2]")
-                      .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
-                      .sum()
-                      .reset_index()
-                      .query("capital_investi > 1")  # filtre les jours sans position réelle
-                      .sort_values('jour'))
+                        .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+                        .sum()
+                        .reset_index()
+                        .query("capital_investi > 1")  # filtre les jours sans position réelle
+                        .sort_values('jour'))
 
     if not df_etf_periode.empty:
         snap_fin = df_etf_periode.iloc[-1]  # dernier jour de la période
@@ -207,12 +207,12 @@ def get_perf_etf_periode(df_histo, df_periode, date_debut, duree):
         if duree == "Début Mois":
             # On cherche le dernier snapshot AVANT le 1er du mois dans l'historique complet
             snap_debut = (df_histo.query("ptf_id in [1, 2] and jour < @debut_mois_actuel")
-                          .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
-                          .sum()
-                          .reset_index()
-                          .query("capital_investi > 1")
-                          .sort_values('jour')
-                          .iloc[-1])
+                            .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi']]
+                            .sum()
+                            .reset_index()
+                            .query("capital_investi > 1")
+                            .sort_values('jour')
+                            .iloc[-1])
         else:
             snap_debut = df_etf_periode.iloc[0]  # premier jour de la période filtrée
 
@@ -258,11 +258,11 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping):
     for ptf_id, ptf_nom in portefeuilles.items():
         # Agrégation journalière pour ce portefeuille sur la période
         df_temp = (df_periode.query("ptf_id == @ptf_id")
-                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                   .sum()
-                   .reset_index()
-                   .query("capital_investi + abondement_recu > 1")
-                   .sort_values('jour'))
+                    .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                    .sum()
+                    .reset_index()
+                    .query("capital_investi + abondement_recu > 1")
+                    .sort_values('jour'))
 
         if not df_temp.empty:
             snap_fin = df_temp.iloc[-1]
@@ -270,12 +270,12 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping):
             if duree == "Début Mois":
                 # Snapshot avant le 1er du mois dans l'historique complet
                 snap_debut = (df_histo.query("ptf_id == @ptf_id and jour < @debut_mois_actuel")
-                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                              .sum()
-                              .reset_index()
-                              .query("capital_investi + abondement_recu > 1")
-                              .sort_values('jour')
-                              .iloc[-1])
+                                .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                                .sum()
+                                .reset_index()
+                                .query("capital_investi + abondement_recu > 1")
+                                .sort_values('jour')
+                                .iloc[-1])
             else:
                 snap_debut = df_temp.iloc[0]
 
@@ -303,7 +303,7 @@ def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
     Retourne deux DataFrames :
     - df_tableau : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
     - df_tableau_buffer : version avec le mois de buffer nécessaire au calcul du graph
-                          (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
+                            (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
 
     Args:
         df_histo (DataFrame): view_historique_portefeuille
@@ -329,8 +329,8 @@ def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
 
     # Agrégation journalière par enveloppe
     df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
-                     .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
-                     .reset_index())
+                    .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
+                    .reset_index())
 
     # Pivot mensuel : dernière valeur du mois par enveloppe
     df_pivot = (df_journalier.groupby(['Enveloppe', pd.Grouper(key='jour', freq='ME')])
@@ -491,11 +491,11 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
     for pdt_id in liste_pdt:
         # Agrégation journalière pour ce produit sur la période
         df_temp = (df_periode.query("pdt_id == @pdt_id")
-                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                   .sum()
-                   .reset_index()
-                   .query("capital_investi + abondement_recu > 1")
-                   .sort_values('jour'))
+                    .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                    .sum()
+                    .reset_index()
+                    .query("capital_investi + abondement_recu > 1")
+                    .sort_values('jour'))
 
         if not df_temp.empty:
             snap_fin = df_temp.iloc[-1]
@@ -503,12 +503,12 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
             if duree == "Début Mois":
                 # Snapshot avant le 1er du mois dans l'historique complet
                 snap_debut = (df_histo.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
-                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                              .sum()
-                              .reset_index()
-                              .query("capital_investi + abondement_recu > 1")
-                              .sort_values('jour')
-                              .iloc[-1])
+                                .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                                .sum()
+                                .reset_index()
+                                .query("capital_investi + abondement_recu > 1")
+                                .sort_values('jour')
+                                .iloc[-1])
             else:
                 snap_debut = df_temp.iloc[0]
 
@@ -523,7 +523,7 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
             injecte += 0
 
     return injecte
-   
+
 
 def get_capital_net(df, liste_pdt):
     """
@@ -604,7 +604,7 @@ def get_tri_ptf(df, engine, liste_ptf):
     tri = xirr(dates, flux)
 
     return tri * 100  # Converti en %
-    
+
 
 def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_pdt, aggregate=False):
     """
@@ -621,11 +621,11 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
         date_debut (pd.Timestamp): date de début calculée par get_date_debut()
         liste_pdt (list): liste des pdt_id à inclure — ex: [4, 5, 6] pour CiC
         aggregate (bool): si True, retourne un dict agrégé {euro, pct} au lieu du détail par pdt_id
-                          ⚠️ le % est recalculé sur la base totale, pas une moyenne des % individuels
+                            ⚠️ le % est recalculé sur la base totale, pas une moyenne des % individuels
 
     Returns:
         dict: si aggregate=False → {pdt_id: {"euro": float, "pct": float}}
-              si aggregate=True  → {"euro": float, "pct": float}
+            si aggregate=True  → {"euro": float, "pct": float}
     """
     debut_mois_actuel = pd.Timestamp.now().replace(day=1)
 
@@ -635,11 +635,11 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
     for pdt_id in liste_pdt:
         # Agrégation journalière pour ce produit sur la période
         df_temp = (df_periode_pdt.query("pdt_id == @pdt_id")
-                   .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                   .sum()
-                   .reset_index()
-                   .query("capital_investi + abondement_recu > 1")
-                   .sort_values('jour'))
+                    .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                    .sum()
+                    .reset_index()
+                    .query("capital_investi + abondement_recu > 1")
+                    .sort_values('jour'))
 
         if not df_temp.empty:
             snap_fin = df_temp.iloc[-1]
@@ -647,12 +647,12 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
             if duree == "Début Mois":
                 # Snapshot avant le 1er du mois dans l'historique complet
                 snap_debut = (df_histo_pdt.query("pdt_id == @pdt_id and jour < @debut_mois_actuel")
-                              .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
-                              .sum()
-                              .reset_index()
-                              .query("capital_investi + abondement_recu > 1")
-                              .sort_values('jour')
-                              .iloc[-1])
+                                .groupby('jour')[['capital_actuel', 'profit_euro', 'capital_investi', 'abondement_recu']]
+                                .sum()
+                                .reset_index()
+                                .query("capital_investi + abondement_recu > 1")
+                                .sort_values('jour')
+                                .iloc[-1])
             else:
                 snap_debut = df_temp.iloc[0]
 
@@ -679,6 +679,7 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
         return {"euro": total_euro, "pct": pct}
     
     return perf
+
 
 def get_tri_pdt(df, engine, liste_pdt):
     """
@@ -730,13 +731,14 @@ def get_tri_pdt(df, engine, liste_pdt):
 
     return tri
 
+
 def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
     """
     Construit le tableau mensuel du journal de bord.
     Retourne deux DataFrames :
     - df_tableau : version nettoyée pour l'affichage (tri décroissant, 1er mois viré)
     - df_tableau_buffer : version avec le mois de buffer nécessaire au calcul du graph
-                          (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
+                            (trié croissant, 1er mois conservé pour le shift(1) de perf_graph)
 
     Args:
         df_histo (DataFrame): view_historique_portefeuille
@@ -762,8 +764,8 @@ def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
 
     # Agrégation journalière par enveloppe
     df_journalier = (df_mensuel.groupby(['Enveloppe', 'jour'])
-                     .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
-                     .reset_index())
+                        .agg({'capital_actuel': 'sum', 'capital_investi': 'sum'})
+                        .reset_index())
 
     # Pivot mensuel : dernière valeur du mois par enveloppe
     df_pivot = (df_journalier.groupby(['Enveloppe', pd.Grouper(key='jour', freq='ME')])
@@ -825,3 +827,6 @@ def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
     df_tableau.index.name = 'Mois'
 
     return df_tableau, df_tableau_buffer
+
+
+# def get_projection(capital, taux, injection_mensuelle, nb_annees):

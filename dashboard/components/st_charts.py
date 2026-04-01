@@ -41,7 +41,7 @@ def make_donuts(df, names, values, color_discrete_map, rotation, labels, poids=N
         rotation (int): angle de départ du premier secteur (en degrés)
         labels (str): texte affiché au centre du donut (ex: "Poids ETF")
         poids (float, optional): poids en % affiché en grand au centre. 
-                                 Si None, le label est centré sans valeur. Default: None
+                                Si None, le label est centré sans valeur. Default: None
         taille (int, optional): hauteur du graphique en pixels. Default: 200
 
     Returns:
@@ -93,9 +93,9 @@ def make_graph_global(df_apports_graph, df_capital_graph, titre=None):
 
     Args:
         df_apports_graph (DataFrame): apports cumulés filtrés sur la période
-                                      doit contenir : index datetime, colonne 'cumsum'
+                                        doit contenir : index datetime, colonne 'cumsum'
         df_capital_graph (DataFrame): capital mensuel filtré sur la période
-                                      doit contenir : index datetime, colonnes 'Total', 'delta', 'perf_graph'
+                                        doit contenir : index datetime, colonnes 'Total', 'delta', 'perf_graph'
         titre (str, optional): titre affiché en haut du graphique. Default None.
 
     Returns:
