@@ -236,7 +236,7 @@ df_affichage.index = df_affichage.index.map(lambda x: f"{mois_fr[x.month]} {x.ye
 format_complet = {
     'ETF': "{:,.2f} €", 'STEF': "{:,.2f} €", 'CiC': "{:,.2f} €",
     'Livrets': "{:,.2f} €", 'Total': "{:,.2f} €", 'Evo Patrimoine': "{:,.2f} €",
-    'Perf Marchés (€)': "{:,.2f} €", 'Evo 12m (€)': "{:,.0f} €",
+    'Perf Marchés (€)': "{:,.2f} €", 'Perf Marchés (%)': "{:,.2f} %", 'Evo 12m (€)': "{:,.0f} €",
     'Evo (%)': "{:.2f} %", 'Evo 12m (%)': "{:.1f} %"
 }
 format_filtre = {k: v for k, v in format_complet.items() if k in df_affichage.columns}
@@ -247,7 +247,7 @@ st.dataframe(
     # Coloration conditionnelle : rouge si négatif, vert si positif
     .map(
         lambda x: 'color: #ff4b4b' if x < 0 else 'color: #09ab3b',
-        subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)'] if c in df_affichage.columns]
+        subset=[c for c in ['Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Perf Marchés (%)'] if c in df_affichage.columns]
     ),
     column_config={"Mois": st.column_config.Column(width=140)},
     width='stretch',

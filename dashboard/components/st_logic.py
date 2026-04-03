@@ -138,7 +138,7 @@ def get_date_debut(duree):
         pd.Timestamp: date de début de la période (minuit)
     """
     nb_mois = get_nb_mois(duree)
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
 
     if nb_mois > 0:
         # Cas normal : on recule de nb_mois à partir d'aujourd'hui
@@ -191,7 +191,7 @@ def get_perf_etf_periode(df_histo, df_periode, date_debut, duree):
         dict: {"euro": float, "pct": float}
     """
     # Utilisé pour le cas "Début Mois" : on cherche le snapshot avant le 1er du mois
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
 
     # Agrégation journalière des deux ETF sur la période
     df_etf_periode = (df_periode.query("ptf_id in [1, 2]")
@@ -250,7 +250,7 @@ def get_perf_ptf_periode(df_histo, df_periode, duree, date_debut, mapping):
     Returns:
         dict: {"PEA": {"euro": float, "pct": float}, "CTO": {...}, ...}
     """
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
 
     portefeuilles = mapping
     perf = {}
@@ -316,7 +316,7 @@ def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
         tuple: (df_tableau, df_tableau_buffer)
     """
     nb_mois = get_nb_mois(duree)
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
     # Date de départ du tableau — inclut 1 mois de buffer pour permettre le calcul des évolutions m-1
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
@@ -352,6 +352,7 @@ def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
 
     # Perf marchés = variation patrimoine - argent injecté ce mois
     df_tableau['Perf Marchés (€)'] = df_tableau['Evo Patrimoine'] - injecte_mois
+    df_tableau['Perf Marchés (%)'] = (df_tableau['Perf Marchés (€)'] / df_tableau['Total'].shift(1)) * 100
 
     # Colonnes glissantes sur 12 mois (activées via toggle dans Home.py)
     df_tableau['Evo 12m (€)'] = df_tableau['Total'] - df_tableau['Total'].shift(12)
@@ -363,7 +364,7 @@ def get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_ptf):
 
     # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
     colonnes_ordre = list(dict.fromkeys(mapping_ptf.values())) + [
-        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Evo 12m (€)', 'Evo 12m (%)'
+        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Perf Marchés (%)', 'Evo 12m (€)', 'Evo 12m (%)'
         ]
 
     # On n'affiche une enveloppe que si elle a des données non nulles
@@ -412,7 +413,7 @@ def get_donnees_graph(df_tableau_buffer, df_apports, duree):
         tuple: (df_apports_graph, df_capital_graph)
     """
     nb_mois = get_nb_mois(duree)
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
     # --- Préparation df_apports_graph ---
@@ -484,7 +485,7 @@ def get_injecte_periode(df_histo, df_periode, duree, date_debut, liste_pdt):
     Returns:
         float: somme du capital injecté sur les produits listés sur la période
     """
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
 
     injecte = 0
 
@@ -751,7 +752,7 @@ def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
         tuple: (df_tableau, df_tableau_buffer)
     """
     nb_mois = get_nb_mois(duree)
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
     # Date de départ du tableau — inclut 1 mois de buffer pour permettre le calcul des évolutions m-1
     date_debut_tableau = debut_mois_actuel - pd.DateOffset(months=nb_mois)
 
@@ -787,6 +788,7 @@ def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
 
     # Perf marchés = variation patrimoine - argent injecté ce mois
     df_tableau['Perf Marchés (€)'] = df_tableau['Evo Patrimoine'] - injecte_mois
+    df_tableau['Perf Marchés (%)'] = (df_tableau['Perf Marchés (€)'] / df_tableau['Total'].shift(1)) * 100
 
     # Colonnes glissantes sur 12 mois (activées via toggle dans Home.py)
     df_tableau['Evo 12m (€)'] = df_tableau['Total'] - df_tableau['Total'].shift(12)
@@ -798,7 +800,7 @@ def get_tableau_mensuel_pdt(df_histo, df_apports, duree, mapping_pdt):
 
     # Ordre d'affichage : enveloppes dynamiques (dédupliquées) + colonnes fixes
     colonnes_ordre = list(dict.fromkeys(mapping_pdt.values())) + [
-        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Evo 12m (€)', 'Evo 12m (%)'
+        'Total', 'Evo Patrimoine', 'Evo (%)', 'Perf Marchés (€)', 'Perf Marchés (%)', 'Evo 12m (€)', 'Evo 12m (%)'
         ]
 
     # On n'affiche une enveloppe que si elle a des données non nulles
