@@ -67,7 +67,7 @@ st.divider() # Un petit trait pour séparer proprement
 with st.sidebar:
     st.title("⚙️ Menu")
 
-    choix_global = st.sidebar.radio("", ["💸 Flux Cash", "📈 Titres"])
+    choix_global = st.sidebar.radio("Choix", ["💸 Flux Cash", "📈 Titres"], label_visibility="collapsed")
 
     st.divider()
 
