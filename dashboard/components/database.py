@@ -70,5 +70,7 @@ def get_cotations_pdt(engine, pdt_id, date_debut):
         WHERE rn = 1
     """
     df_cotation = pd.read_sql(query, engine, params={"pdt_id": pdt_id, "date_debut": date_debut})
+    df_cotation['min'] = df_cotation['min'].fillna(df_cotation['cot_prix'])
+    df_cotation['max'] = df_cotation['max'].fillna(df_cotation['cot_prix'])
 
     return df_cotation

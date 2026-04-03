@@ -38,5 +38,4 @@
 - [ ] **Optimisation d'allocation** : Modèle de Markowitz (Risk/Reward) ⏳
 
 ### 🚨 7. Bugs Mineurs
-- [ ] **Bug "Début Mois" J1** : cotations vides si lancé le 1er du mois → \df_cotation `retourne None → crash format sur STEF` ⏳
 - [ ] **Graph dashboards** : premier mois sans data `NaN sur diff` ⏳

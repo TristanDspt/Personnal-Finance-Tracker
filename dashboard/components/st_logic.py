@@ -627,7 +627,7 @@ def get_perf_pdt_periode(df_histo_pdt, df_periode_pdt, duree, date_debut, liste_
         dict: si aggregate=False → {pdt_id: {"euro": float, "pct": float}}
             si aggregate=True  → {"euro": float, "pct": float}
     """
-    debut_mois_actuel = pd.Timestamp.now().replace(day=1)
+    debut_mois_actuel = pd.Timestamp.now().replace(day=1).normalize()
 
     perf = {}
     total_base = 0
