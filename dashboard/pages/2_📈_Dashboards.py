@@ -241,13 +241,13 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net[1]:.0f} €".replace(",", " "),
+                value=f"{capital_net[1]:,.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col5:
             st.metric(
                 label="Capital injecté",
-                value=f"{cap_injecte:.0f} €".replace(",", " ")
+                value=f"{cap_injecte:,.0f} €".replace(",", " ")
             )
 
         st.divider()
@@ -347,13 +347,13 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net[2]:.0f} €".replace(",", " "),
+                value=f"{capital_net[2]:,.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col5:
             st.metric(
                 label="Capital injecté",
-                value=f"{cap_injecte:.0f} €".replace(",", " ")
+                value=f"{cap_injecte:,.0f} €".replace(",", " ")
             )
 
         st.divider()
@@ -455,7 +455,7 @@ match choix_global:
         with col4:
             st.metric(
                 label="Capital net",
-                value=f"{capital_net[3]:.0f} €".replace(",", " "),
+                value=f"{capital_net[3]:,.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col5:
@@ -556,7 +556,7 @@ match choix_global:
             )
             st.metric(
                 label="Capital net",
-                value=f"{sum(capital_net.values()):.0f} €".replace(",", " "),
+                value=f"{sum(capital_net.values()):,.0f} €".replace(",", " "),
                 help="Capital net d'impots : 18.6 %"
             )
         with col2:
