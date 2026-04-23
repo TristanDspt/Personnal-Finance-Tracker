@@ -109,7 +109,7 @@ if choix_global == "💸 Flux Cash":
     with col4:
         mvt_date = st.date_input("Date de l'opération")
     with col5:
-        saisie_parts = st.text_input("Montant", value="0")
+        saisie_parts = st.text_input("Montant", value="0", help="Saisir un montant positif, le signe est géré automatiquement")
         try:
             mvt_nb_parts = float(saisie_parts.replace(',', '.'))
         except ValueError:
@@ -146,7 +146,7 @@ elif choix_global == "📈 Titres":
     with col4:
         mvt_date = st.date_input("Date de l'opération")
     with col5:
-        saisie_parts = st.text_input("Nombre de parts", value="0")
+        saisie_parts = st.text_input("Nombre de parts", value="0", help="Saisir une valeur positive — le signe est appliqué automatiquement")
         try:
             mvt_nb_parts = float(saisie_parts.replace(',', '.'))
         except ValueError:
