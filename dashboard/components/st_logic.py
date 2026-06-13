@@ -10,7 +10,7 @@ from pyxirr import xirr
 
 # --- RÉFÉRENCE : IDs Portefeuilles & Produits ---
 # PTF: 1 : PEA | 2 : CTO | 3 : STEF | 4 CiC | 6 : Livrets
-# PDT: 1 : S&P500 | 2 : Gold | 3 : Action STEF | 4 : Oblig CiC | 5 : Equi CiC | 6 : Strat CiC | 7 : Cash Bourso | 8 : Cash TR | 10 : Livret A | 11 : LEP
+# PDT: 1 : S&P500 | 2 : Gold | 3 : Action STEF | 4 : Oblig CiC | 5 : Equi CiC | 6 : Strat CiC | 7 : Cash PEA | 8 : Cash CTO | 10 : Livret A | 11 : LEP
 
 
 PTF_TO_PDT = {

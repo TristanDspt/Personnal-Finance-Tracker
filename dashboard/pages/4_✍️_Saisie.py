@@ -265,12 +265,6 @@ with col_btn:
             
             # On récupère le nom de la banque pour calculer les frais
             banque = df_liste_ptf[df_liste_ptf['ptf_id'] == ptf_id]['ptf_nom_banque'].values[0]
-            
-            # Calcul des frais Bourso (à adapter si tu as d'autres banques)
-            if banque == 'BoursoBank':
-                mvt_frais = min((mvt_prix * mvt_nb_parts) * 0.005, 1.99)
-            else:
-                mvt_frais = 0
 
         # 3. Appel de la fonction (mvt_frais sera soit 0 (Cash), soit le calcul ci-dessus)
         confirmer_operation(

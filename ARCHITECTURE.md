@@ -96,8 +96,8 @@ dashboard/components/database.py   ← connexion + chargement des vues
 | 4 | CiC | 4 | Oblig CiC |
 | 6 | Livrets | 5 | Equi CiC |
 | | | 6 | Strat CiC |
-| | | 7 | Cash Bourso (PEA) |
-| | | 8 | Cash TR (CTO) |
+| | | 7 | Cash PEA |
+| | | 8 | Cash CTO |
 | | | 10 | Livret A |
 | | | 11 | LEP |
 
