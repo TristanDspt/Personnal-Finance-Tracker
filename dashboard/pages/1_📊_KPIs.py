@@ -141,7 +141,7 @@ with col2:
 with col3:
     st.metric(
         label="Performance Annualisée",
-        value=f"{tri_global:.0f} %",
+        value=f"{tri_global:.1f} %",
         help="TRI : conversion de la performance en base annuelle"
     )
 
