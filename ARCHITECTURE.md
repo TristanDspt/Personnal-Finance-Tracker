@@ -32,7 +32,8 @@ dashboard/components/database.py   ← connexion + chargement des vues
 | `dashboard/components/st_charts.py` | Toutes les figures Plotly (KPIs + Dashboards) |
 | `dashboard/pages/1_📊_KPIs.py` | Page KPIs globaux |
 | `dashboard/pages/2_📈_Dashboards.py` | Dashboards par enveloppe |
-| `dashboard/pages/3_🧾_Saisie.py` | Formulaire de saisie des mouvements |
+| `dashboard/pages/3_🚀_Projection.py` | Projections patrimoniales |
+| `dashboard/pages/4_✍️_Saisie.py` | Formulaire de saisie des mouvements |
 | `scripts/` | ETL : scripts de mise à jour des données (update_pee.py, etc.) |
 | `sql/` | Scripts SQL (schéma, vues) |
 
@@ -50,7 +51,8 @@ dashboard/components/database.py   ← connexion + chargement des vues
 │   ├── pages/
 │   │   ├── 1_📊_KPIs.py       ← KPIs globaux
 │   │   ├── 2_📈_Dashboards.py ← Dashboards par enveloppe
-│   │   └── 3_🧾_Saisie.py     ← Formulaire de saisie
+│   │   ├── 3_🚀_Projection.py ← Projections patrimoniales
+│   │   └── 4_✍️_Saisie.py     ← Formulaire de saisie
 │   ├── __init__.py
 │   └── app.py                 ← Point d'entrée Streamlit
 ├── scripts/

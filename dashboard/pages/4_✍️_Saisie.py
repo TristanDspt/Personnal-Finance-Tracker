@@ -127,7 +127,6 @@ elif choix_global == "📈 Titres":
 
     # Ligne 1
     col1, col2, col3 = st.columns(3)
-    col1, col2, col3 = st.columns(3)
     with col1:
         choix_enveloppe = st.selectbox("Livret", liste_livrets_titres)
         ptf_id = df_actions[df_actions['affichage_actions'] == choix_enveloppe]['ptf_id'].values[0]
@@ -269,19 +268,19 @@ with col_btn:
         if choix_global == "📈 Titres":
             # On trouve l'ID de la poche cash
             id_cash_miroir = df_liste_pdt[(df_liste_pdt['ptf_id'] == ptf_id) & (df_liste_pdt['pdt_cash'] == True)]['pdt_id'].values[0]
-            
-            # On récupère le nom de la banque pour calculer les frais
-            banque = df_liste_ptf[df_liste_ptf['ptf_id'] == ptf_id]['ptf_nom_banque'].values[0]
 
         # 3. Appel de la fonction (mvt_frais sera soit 0 (Cash), soit le calcul ci-dessus)
-        confirmer_operation(
-            pdt_id, 
-            mvt_date, 
-            mvt_nb_parts, 
-            mvt_frais, 
-            mvt_type_mouvement, 
-            mvt_prix, 
-            choix_global, 
-            pdt_nom_produit, 
-            id_cash_miroir
-        )
+        if None not in (mvt_nb_parts, mvt_prix, mvt_frais):
+            confirmer_operation(
+                pdt_id, 
+                mvt_date, 
+                mvt_nb_parts, 
+                mvt_frais, 
+                mvt_type_mouvement, 
+                mvt_prix, 
+                choix_global, 
+                pdt_nom_produit, 
+                id_cash_miroir
+            )
+        else:
+            st.error("⚠️ Veuillez corriger les champs invalides avant d'enregistrer.")
