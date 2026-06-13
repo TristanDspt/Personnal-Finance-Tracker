@@ -142,7 +142,7 @@ elif choix_global == "📈 Titres":
         mvt_type_mouvement = st.selectbox("Type", liste_types_titres)
 
     # Ligne 2
-    col4, col5, col6 = st.columns(3)
+    col4, col5, col6 , col7 = st.columns(4)
     with col4:
         mvt_date = st.date_input("Date de l'opération")
     with col5:
@@ -159,6 +159,13 @@ elif choix_global == "📈 Titres":
         except ValueError:
             st.error("⚠️ Prix invalide")
             mvt_prix = None
+    with col7:
+        saisie_frais = st.text_input("Frais", value="0")
+        try:
+            mvt_frais = float(saisie_frais.replace(',', '.'))
+        except ValueError:
+            st.error("⚠️ Frais invalide")
+            mvt_frais = None
 
 # --------------------------------------------------------------------------------------------------------------
 
