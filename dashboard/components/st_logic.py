@@ -534,7 +534,7 @@ def get_capital_net(df, liste_pdt):
 
     Args:
         df (DataFrame): view_global_portefeuille
-        ptf_id (int): id du portefeuille
+        liste_pdt (list): liste des pdt_id à inclure — ex: [1, 7] pour PEA (ETF + cash)
 
     Returns:
         dict: {"net": float, "euro": float, "pct": float}

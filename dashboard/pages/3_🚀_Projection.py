@@ -52,7 +52,7 @@ with st.sidebar:
     st.subheader("🛠️ Configuration")
     duree = st.select_slider(
         "Période d'analyse",
-        options=["Début Mois", "15 Jours", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
+        options=["Début Mois", "1 Mois", "3 Mois", "6 Mois", "1 An", "3 Ans", "5 Ans", "Max"],
         value="6 Mois"
     )
     # Toggle pour afficher les graphs détaillés sur le desh CiC

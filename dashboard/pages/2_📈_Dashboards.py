@@ -180,10 +180,10 @@ match choix_global:
         # GRAPHIQUES — (réactif au slider)
 
         # Lineplot global
-        df_apports = df_apports_pdt.query("pdt_id in (7, 8)").groupby('mois')['injecte'].sum().reset_index()
+        df_apports_graph = df_apports_pdt.query("pdt_id in (7, 8)").groupby('mois')['injecte'].sum().reset_index()
         mapping_tableau = {1: "PEA", 2: "CTO"}
-        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports, duree, mapping_tableau)
-        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports, duree)
+        df_tableau, df_tableau_buffer      = logic.get_tableau_mensuel_ptf(df_histo, df_apports_graph, duree, mapping_tableau)
+        df_apports_graph, df_capital_graph = logic.get_donnees_graph(df_tableau_buffer, df_apports_graph, duree)
 
         if duree not in ("1 Mois", "15 Jours", "Début Mois"):
             fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)

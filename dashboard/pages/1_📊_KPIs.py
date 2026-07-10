@@ -255,6 +255,6 @@ st.dataframe(
 )
 
 # GRAPHIQUE GLOBAL — masqué sur les courtes périodes (pas assez de points pour être lisible)
-if duree not in ("1 Mois", "15 Jours", "Début Mois"):
+if duree not in ("1 Mois", "Début Mois"):
     fig_global = charts.make_graph_global(df_apports_graph, df_capital_graph)
     st.plotly_chart(fig_global, width='stretch')
